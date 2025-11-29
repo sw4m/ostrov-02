@@ -98,16 +98,36 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         formData.append('photo', selectedFile);
 
         try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            console.log('CSRF Token:', csrfToken);
+            console.log('Cookies:', document.cookie);
+            
+            if (!csrfToken) {
+                setError('CSRF token not found. Please refresh the page.');
+                setIsUploading(false);
+                return;
+            }
+
             const response = await fetch('/api/upload-photo', {
                 method: 'POST',
                 body: formData,
+                credentials: 'same-origin',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': csrfToken || '',
                     'Accept': 'application/json',
                 },
             });
 
+            console.log('Response status:', response.status);
+
+            if (response.status === 419) {
+                setError('Session expired. Please refresh the page and try again.');
+                setIsUploading(false);
+                return;
+            }
+
             const data = await response.json();
+            console.log('Response data:', data);
 
             if (data.success) {
                 setSuccess(true);
@@ -122,7 +142,8 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
             } else {
                 setError(data.error || 'Failed to upload photo. Please try again.');
             }
-        } catch {
+        } catch (err) {
+            console.error('Upload error:', err);
             setError('Network error. Please check your connection and try again.');
         } finally {
             setIsUploading(false);
