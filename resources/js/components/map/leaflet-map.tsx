@@ -1,5 +1,5 @@
-import { MapContainer, TileLayer, ZoomControl } from 'react-leaflet';
-import { useEffect, useCallback } from 'react';
+import { MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet';
+import { useEffect } from 'react';
 import { useAppearance } from '@/hooks/use-appearance';
 import { GeoJSONRoadLayer } from './geojson-road-layer';
 import { MapLegend } from './map-legend';
@@ -7,24 +7,34 @@ import { useGeoJSONLoader } from './use-geojson-loader';
 
 interface LeafletMapProps {
     onFileLoad?: (file: File) => void;
+    center?: { lat: number; lon: number } | null;
+    uploadedFile?: File | null;
 }
 
-export function LeafletMap({ onFileLoad }: LeafletMapProps) {
+// Component to handle map navigation from props
+function MapController({ center }: { center?: { lat: number; lon: number } | null }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (center) {
+            map.setView([center.lat, center.lon], 13);
+        }
+    }, [center, map]);
+
+    return null;
+}
+
+export function LeafletMap({ onFileLoad, center, uploadedFile }: LeafletMapProps) {
     const { appearance } = useAppearance();
     const { getFeaturesInViewport, hasData, loadGeoJSON } = useGeoJSONLoader();
 
-    // Handle file drop/upload
-    const handleFileUpload = useCallback((file: File) => {
-        loadGeoJSON(file);
-        onFileLoad?.(file);
-    }, [loadGeoJSON, onFileLoad]);
-
-    // Expose file upload handler globally for parent components
+    // Handle file upload from props
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            (window as typeof window & { __mapFileUpload?: (file: File) => void }).__mapFileUpload = handleFileUpload;
+        if (uploadedFile) {
+            loadGeoJSON(uploadedFile);
+            onFileLoad?.(uploadedFile);
         }
-    }, [handleFileUpload]);
+    }, [uploadedFile, loadGeoJSON, onFileLoad]);
 
     // Tile layer URLs for light and dark modes
     const tileUrl =
@@ -40,12 +50,13 @@ export function LeafletMap({ onFileLoad }: LeafletMapProps) {
     return (
         <div className="relative h-full w-full">
             <MapContainer
-                center={[50.0755, 14.4378]} // Prague, Czech Republic as default
+                center={[48.713950, 21.258081]}
                 zoom={13}
                 zoomControl={false}
                 className="h-full w-full"
                 style={{ background: appearance === 'dark' ? '#1a1a1a' : '#f0f0f0' }}
             >
+                <MapController center={center} />
                 <TileLayer url={tileUrl} attribution={attribution} />
                 <ZoomControl position="bottomright" />
 
@@ -58,6 +69,6 @@ export function LeafletMap({ onFileLoad }: LeafletMapProps) {
 
                 <MapLegend />
             </MapContainer>
-        </div>
+        </div >
     );
 }

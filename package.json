@@ -57,6 +57,7 @@
         "leaflet": "^1.9.4",
         "leaflet.markercluster": "^1.5.3",
         "lucide-react": "^0.475.0",
+        "nominatim-client": "^3.2.1",
         "overpass-ts": "^4.3.8",
         "rbush": "^4.0.1",
         "react": "19.0.0-rc.1",
