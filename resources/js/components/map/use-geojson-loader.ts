@@ -45,6 +45,54 @@ export function useGeoJSONLoader() {
         return tree;
     }, [geoJsonData]);
 
+    // Load GeoJSON from database via API
+    const loadRoadsFromDatabase = useCallback(async (bounds: ViewportBounds) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const params = new URLSearchParams({
+                minLat: bounds.minLat.toString(),
+                maxLat: bounds.maxLat.toString(),
+                minLng: bounds.minLng.toString(),
+                maxLng: bounds.maxLng.toString(),
+            });
+
+            const response = await fetch(`/api/roads?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch roads: ${response.statusText}`);
+            }
+
+            const json = (await response.json()) as RoadGeoJSON;
+
+            console.log('Loaded roads from database:', json.features?.length || 0, 'features');
+
+            // Validate GeoJSON structure
+            if (!json.type || json.type !== 'FeatureCollection') {
+                throw new Error('Invalid GeoJSON: Must be a FeatureCollection');
+            }
+
+            if (!Array.isArray(json.features)) {
+                throw new Error('Invalid GeoJSON: Missing features array');
+            }
+
+            setGeoJsonData(json);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to load roads from database';
+            setError(message);
+            console.error('Database roads loading error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     // Load GeoJSON from file
     const loadGeoJSON = useCallback(async (file: File) => {
         setIsLoading(true);
@@ -104,6 +152,7 @@ export function useGeoJSONLoader() {
         isLoading,
         error,
         loadGeoJSON,
+        loadRoadsFromDatabase,
         getFeaturesInViewport,
         clearGeoJSON,
         hasData: !!geoJsonData,

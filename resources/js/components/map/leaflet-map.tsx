@@ -11,8 +11,14 @@ interface LeafletMapProps {
     uploadedFile?: File | null;
 }
 
-// Component to handle map navigation from props
-function MapController({ center }: { center?: { lat: number; lon: number } | null }) {
+// Component to handle map navigation and database loading
+function MapController({
+    center,
+    loadRoadsFromDatabase
+}: {
+    center?: { lat: number; lon: number } | null;
+    loadRoadsFromDatabase: (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => void;
+}) {
     const map = useMap();
 
     useEffect(() => {
@@ -21,12 +27,47 @@ function MapController({ center }: { center?: { lat: number; lon: number } | nul
         }
     }, [center, map]);
 
+    // Load roads from database when map is ready
+    useEffect(() => {
+        const loadInitialRoads = () => {
+            const bounds = map.getBounds();
+            loadRoadsFromDatabase({
+                minLat: bounds.getSouth(),
+                maxLat: bounds.getNorth(),
+                minLng: bounds.getWest(),
+                maxLng: bounds.getEast(),
+            });
+        };
+
+        // Wait for map to be ready
+        map.whenReady(() => {
+            loadInitialRoads();
+        });
+
+        // Reload on significant map movements
+        const handleMoveEnd = () => {
+            const bounds = map.getBounds();
+            loadRoadsFromDatabase({
+                minLat: bounds.getSouth(),
+                maxLat: bounds.getNorth(),
+                minLng: bounds.getWest(),
+                maxLng: bounds.getEast(),
+            });
+        };
+
+        map.on('moveend', handleMoveEnd);
+
+        return () => {
+            map.off('moveend', handleMoveEnd);
+        };
+    }, [map, loadRoadsFromDatabase]);
+
     return null;
 }
 
 export function LeafletMap({ onFileLoad, center, uploadedFile }: LeafletMapProps) {
     const { appearance } = useAppearance();
-    const { getFeaturesInViewport, hasData, loadGeoJSON } = useGeoJSONLoader();
+    const { getFeaturesInViewport, hasData, loadGeoJSON, loadRoadsFromDatabase } = useGeoJSONLoader();
 
     // Handle file upload from props
     useEffect(() => {
@@ -56,7 +97,7 @@ export function LeafletMap({ onFileLoad, center, uploadedFile }: LeafletMapProps
                 className="h-full w-full"
                 style={{ background: appearance === 'dark' ? '#1a1a1a' : '#f0f0f0' }}
             >
-                <MapController center={center} />
+                <MapController center={center} loadRoadsFromDatabase={loadRoadsFromDatabase} />
                 <TileLayer url={tileUrl} attribution={attribution} />
                 <ZoomControl position="bottomright" />
 

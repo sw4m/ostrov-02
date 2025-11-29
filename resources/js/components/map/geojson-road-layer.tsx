@@ -12,19 +12,19 @@ interface GeoJSONRoadLayerProps {
 // Color mapping for road conditions
 const CONDITION_STYLES: Record<RoadCondition, PathOptions> = {
     excellent: {
-        color: '#22c55e', // green-500
-        weight: 4,
-        opacity: 0.8,
+        color: '#ef4444', // red-500
+        weight: 5,
+        opacity: 0.9,
     },
     good: {
-        color: '#eab308', // yellow-500
-        weight: 4,
-        opacity: 0.8,
+        color: '#ef4444', // red-500
+        weight: 5,
+        opacity: 0.9,
     },
     poor: {
-        color: '#f97316', // orange-500
-        weight: 4,
-        opacity: 0.8,
+        color: '#ef4444', // red-500
+        weight: 5,
+        opacity: 0.9,
     },
     critical: {
         color: '#ef4444', // red-500
