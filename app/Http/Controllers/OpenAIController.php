@@ -40,7 +40,18 @@ class OpenAIController extends Controller
             'messages' => [
                 [
                     'role' => 'system',
+<<<<<<< HEAD
                     'content' => 'You are an expert in road and pavement conditions.
+=======
+                    'content' => 'You are an expert in road and pavement conditions. Analyze images and provide structured JSON responses.'
+                ],
+                [
+                    'role' => 'user',
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => 'You are an expert in road and pavement conditions.
+>>>>>>> eee1a31 (prompt fix)
 
 Analyze the given image and provide a structured JSON output with the following fields:
 
@@ -50,16 +61,25 @@ Analyze the given image and provide a structured JSON output with the following 
 4. "confidence": a number from 0 to 1 representing how confident you are in this assessment.
 
 Respond **only in JSON format**.'
+<<<<<<< HEAD
                 ],
                 [
                     'role' => 'user',
                     'content' => [
                                                 [
+=======
+                        ],
+                        [
+>>>>>>> eee1a31 (prompt fix)
                             'type' => 'image_url',
                             'image_url' => [
                                 'url' => "data:{$mimeType};base64,{$base64Image}"
                             ]
+<<<<<<< HEAD
                         ],
+=======
+                        ]
+>>>>>>> eee1a31 (prompt fix)
                     ]
                 ]
             ],
@@ -68,6 +88,7 @@ Respond **only in JSON format**.'
 
         // Extract the content from the response
         $content = $response->choices[0]->message->content ?? '';
+<<<<<<< HEAD
 
         // Parse JSON response
         $analysis = json_decode($content, true);
@@ -80,5 +101,23 @@ Respond **only in JSON format**.'
             ], 500);
         }
 
+=======
+
+        // Parse JSON response
+        $analysis = json_decode($content, true);
+
+        if (!$analysis) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid AI response format',
+                'raw_response' => $content
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'analysis' => $analysis
+        ]);
+>>>>>>> eee1a31 (prompt fix)
     }
 }
