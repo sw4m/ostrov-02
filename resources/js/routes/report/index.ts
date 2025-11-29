@@ -1,60 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
-/**
-* @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
-* @route '/api/upload-photo'
-*/
-export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: store.url(options),
-    method: 'post',
-})
-
-store.definition = {
-    methods: ["post"],
-    url: '/api/upload-photo',
-} satisfies RouteDefinition<["post"]>
-
-/**
-* @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
-* @route '/api/upload-photo'
-*/
-store.url = (options?: RouteQueryOptions) => {
-    return store.definition.url + queryParams(options)
-}
-
-/**
-* @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
-* @route '/api/upload-photo'
-*/
-store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
-    url: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
-* @route '/api/upload-photo'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
-* @route '/api/upload-photo'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
-
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\PhotoUploadController::update
 * @see app/Http/Controllers/PhotoUploadController.php:135
@@ -145,6 +89,8 @@ updateForm.put = (args: { report: number | { id: number } } | [report: number | 
 
 update.form = updateForm
 
-const PhotoUploadController = { store, update }
+const report = {
+    update: Object.assign(update, update),
+}
 
-export default PhotoUploadController
+export default report

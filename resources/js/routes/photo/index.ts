@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\PhotoUploadController::upload
-* @see app/Http/Controllers/PhotoUploadController.php:17
+* @see app/Http/Controllers/PhotoUploadController.php:18
 * @route '/api/upload-photo'
 */
 export const upload = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ upload.definition = {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::upload
-* @see app/Http/Controllers/PhotoUploadController.php:17
+* @see app/Http/Controllers/PhotoUploadController.php:18
 * @route '/api/upload-photo'
 */
 upload.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ upload.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::upload
-* @see app/Http/Controllers/PhotoUploadController.php:17
+* @see app/Http/Controllers/PhotoUploadController.php:18
 * @route '/api/upload-photo'
 */
 upload.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ upload.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::upload
-* @see app/Http/Controllers/PhotoUploadController.php:17
+* @see app/Http/Controllers/PhotoUploadController.php:18
 * @route '/api/upload-photo'
 */
 const uploadForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const uploadForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =>
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::upload
-* @see app/Http/Controllers/PhotoUploadController.php:17
+* @see app/Http/Controllers/PhotoUploadController.php:18
 * @route '/api/upload-photo'
 */
 uploadForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

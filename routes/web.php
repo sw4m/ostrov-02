@@ -30,6 +30,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('api/upload-photo', [PhotoUploadController::class, 'store'])
         ->name('photo.upload');
+
+    Route::put('api/reports/{report}', [PhotoUploadController::class, 'update'])
+        ->name('report.update');
 });
 
 require __DIR__.'/settings.php';

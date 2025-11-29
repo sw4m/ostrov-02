@@ -11,11 +11,26 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { Camera, Upload, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ReportFormDialog } from './report-form-dialog';
 
 interface UploadDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: (latitude: number, longitude: number) => void;
+}
+
+interface ReportData {
+    report_id: number;
+    latitude: number;
+    longitude: number;
+    photo_url: string;
+    ai_analysis: {
+        type?: string;
+        description?: string;
+        condition?: number;
+        severity?: string;
+        detected_issues?: string[];
+    };
 }
 
 export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProps) {
@@ -25,6 +40,8 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [reportData, setReportData] = useState<ReportData | null>(null);
+    const [showReportForm, setShowReportForm] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const resetState = useCallback(() => {
@@ -33,6 +50,8 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         setIsDragging(false);
         setError(null);
         setSuccess(false);
+        setReportData(null);
+        setShowReportForm(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -100,13 +119,6 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             console.log('CSRF Token:', csrfToken);
-            console.log('Cookies:', document.cookie);
-            
-            if (!csrfToken) {
-                setError('CSRF token not found. Please refresh the page.');
-                setIsUploading(false);
-                return;
-            }
 
             const response = await fetch('/api/upload-photo', {
                 method: 'POST',
@@ -132,13 +144,13 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
             if (data.success) {
                 setSuccess(true);
                 setError(null);
+                setReportData(data);
 
-                // Wait a moment to show success message
+                // Wait a moment to show success message, then open report form
                 setTimeout(() => {
-                    onSuccess(data.latitude, data.longitude);
                     onOpenChange(false);
-                    resetState();
-                }, 2000);
+                    setShowReportForm(true);
+                }, 1500);
             } else {
                 setError(data.error || 'Failed to upload photo. Please try again.');
             }
@@ -157,8 +169,14 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         }
     }, [isUploading, onOpenChange, resetState]);
 
+    const handleReportFormSuccess = useCallback((latitude: number, longitude: number) => {
+        resetState();
+        onSuccess(latitude, longitude);
+    }, [resetState, onSuccess]);
+
     return (
-        <Dialog open={open} onOpenChange={handleClose}>
+        <>
+            <Dialog open={open} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -284,5 +302,16 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
                 </div>
             </DialogContent>
         </Dialog>
+
+        {/* Report Form Dialog */}
+        {reportData && (
+            <ReportFormDialog
+                open={showReportForm}
+                onOpenChange={setShowReportForm}
+                onSuccess={handleReportFormSuccess}
+                reportData={reportData}
+            />
+        )}
+        </>
     );
 }

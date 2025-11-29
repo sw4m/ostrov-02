@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Intervention\Image\Laravel\Facades\Image;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use OpenAI\Laravel\Facades\OpenAI;
 use App\Models\Report;
@@ -16,18 +17,26 @@ class PhotoUploadController extends Controller
 {
     public function store(Request $request)
     {
+        Log::info('Photo upload started');
+
         $request->validate([
             'photo' => 'required|image|mimes:jpeg,jpg,png,heic|max:10240', // 10MB max
         ]);
+
+        Log::info('Validation passed');
 
         try {
             $file = $request->file('photo');
             $tempPath = $file->getRealPath();
 
+            Log::info('File received', ['path' => $tempPath]);
+
             // Extract EXIF data
             $exif = @exif_read_data($tempPath);
+            Log::info('EXIF data read', ['has_gps' => isset($exif['GPSLatitude'])]);
 
             if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
+                Log::warning('No GPS data in photo');
                 return response()->json([
                     'success' => false,
                     'error' => 'Location data not found in photo. Please enable location services in your camera settings and take a new photo.',
@@ -37,6 +46,8 @@ class PhotoUploadController extends Controller
             // Convert EXIF GPS to decimal coordinates
             $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
             $longitude = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+
+            Log::info('Coordinates extracted', ['lat' => $latitude, 'lng' => $longitude]);
 
             if ($latitude === null || $longitude === null) {
                 return response()->json([
@@ -48,6 +59,8 @@ class PhotoUploadController extends Controller
             // Generate unique filename
             $filename = Str::uuid() . '.webp';
             $storagePath = 'photos/' . $filename;
+
+            Log::info('Starting image processing');
 
             // Load image and convert to WebP
             $image = Image::read($tempPath);
@@ -66,13 +79,20 @@ class PhotoUploadController extends Controller
             // Get the full URL for the stored image
             $photoUrl = Storage::url($storagePath);
 
+            Log::info('Image saved', ['url' => $photoUrl]);
+
             // Analyze image with OpenAI Vision API
+            Log::info('Starting AI analysis');
             $aiAnalysis = $this->analyzeRoadCondition($tempPath);
+            Log::info('AI analysis complete', ['type' => $aiAnalysis['type'] ?? 'unknown']);
 
             // Find or create nearest road
+            Log::info('Finding nearest road');
             $road = $this->findOrCreateNearestRoad($latitude, $longitude);
+            Log::info('Road found/created', ['road_id' => $road->id]);
 
             // Create report in database
+            Log::info('Creating report');
             $report = Report::create([
                 'road_id' => $road->id,
                 'user_id' => Auth::id() ?? 1, // Default to user 1 if not authenticated
@@ -85,6 +105,9 @@ class PhotoUploadController extends Controller
                 'latitude' => $latitude,
                 'longitude' => $longitude,
             ]);
+
+            Log::info('Report created', ['report_id' => $report->id]);
+            Log::info('Sending success response');
 
             return response()->json([
                 'success' => true,
@@ -101,6 +124,57 @@ class PhotoUploadController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'An error occurred while processing your photo. Please try again.',
+                'debug' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a report with user-confirmed details
+     */
+    public function update(Request $request, Report $report)
+    {
+        Log::info('Report update started', ['report_id' => $report->id]);
+
+        $request->validate([
+            'type' => 'required|in:crack,pothole,damage',
+            'description' => 'required|string|max:1000',
+            'severity' => 'sometimes|in:low,medium,high',
+        ]);
+
+        try {
+            // Update report with user-confirmed data
+            $report->update([
+                'type' => $request->type,
+                'description' => $request->description,
+            ]);
+
+            // Update AI analysis with severity if provided
+            if ($request->has('severity')) {
+                $aiAnalysis = $report->ai_analysis ?? [];
+                $aiAnalysis['severity'] = $request->severity;
+                $aiAnalysis['user_confirmed'] = true;
+                $report->ai_analysis = $aiAnalysis;
+                $report->save();
+            }
+
+            Log::info('Report updated successfully', ['report_id' => $report->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Report updated successfully!',
+                'report' => $report,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Report update error', [
+                'report_id' => $report->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'An error occurred while updating the report. Please try again.',
                 'debug' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
@@ -181,24 +255,7 @@ class PhotoUploadController extends Controller
             ->first();
 
         // If found within bounding box, use it
-        if ($nearestRoad) {
-            return $nearestRoad;
-        }
-
-        // Otherwise create or get a generic road entry
-        return Road::firstOrCreate(
-            ['osm_id' => 'unknown'],
-            [
-                'name' => 'Unknown Road',
-                'highway_type' => 'unclassified',
-                'geometry' => [[[$longitude, $latitude]]],
-                'bbox_min_lat' => $latitude - 0.001,
-                'bbox_max_lat' => $latitude + 0.001,
-                'bbox_min_lng' => $longitude - 0.001,
-                'bbox_max_lng' => $longitude + 0.001,
-                'condition' => 1.0,
-            ]
-        );
+        return $nearestRoad;
     }
 
     /**
