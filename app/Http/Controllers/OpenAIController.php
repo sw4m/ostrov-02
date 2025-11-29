@@ -37,19 +37,38 @@ class OpenAIController extends Controller
         // Create the response using OpenAI chat API
         $response = OpenAI::chat()->create([
             'model' => 'gpt-4o',
+            'temperature' => 0,
+            'response_format' => [
+                'type' => 'json_schema',
+                'json_schema' => [
+                    'name' => 'RoadAnalysis',
+                    'strict' => true,
+                    'schema' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'properties' => [
+                            'road_present' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                            'damage_type' => ['type' => 'string', 'enum' => ['crack','pothole','damage','none']],
+                            'condition_score' => ['type' => ['number','null'], 'minimum' => 0, 'maximum' => 1],
+                            'confidence' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                        ],
+                        'required' => ['road_present','damage_type','condition_score','confidence'],
+                    ],
+                ],
+            ],
             'messages' => [
                 [
                     'role' => 'system',
                     'content' => 'You are an expert in road and pavement conditions.
-
-Analyze the given image and provide a structured JSON output with the following fields:
-
-1. "road_present": a number from 0 to 1 representing the likelihood that the image shows a road (1 = definitely a road, 0 = definitely not a road).
-2. "damage_type": one of the following strings only: "crack", "pothole", "damage". Use "damage" for any general damage not clearly a crack or a pothole. If there is no damage, use "none".
-3. "condition_score": a number from 0 to 1 representing the condition of the road (1 = perfect, 0 = completely damaged). If road_present is close to 0, you can set this to null.
-4. "confidence": a number from 0 to 1 representing how confident you are in this assessment.
-
-Respond **only in JSON format**.'
+Definitions:
+- "pothole": a visible depression/void with a clear rim/edge or missing material; often irregular with a shadowed interior.
+- "crack": thin linear fracture(s) without missing chunks.
+- "damage": scuffs, raveling, patchwork, stains, or ambiguous wear not clearly pothole/crack.
+Decision rules:
+- Label "pothole" only with a clear depression and rim. Shadows, stains, wet patches, or tire marks are NOT potholes.
+- If road_present < 0.5, set condition_score to null and damage_type to "none".
+- Use high confidence only if unambiguous; reduce confidence for poor lighting, blur, or occlusions.
+Return JSON only with fields: road_present, damage_type, condition_score, confidence.'
                 ],
                 [
                     'role' => 'user',
@@ -57,21 +76,21 @@ Respond **only in JSON format**.'
                                                 [
                             'type' => 'image_url',
                             'image_url' => [
-                                'url' => "data:{$mimeType};base64,{$base64Image}"
+                                'url' => "data:{$mimeType};base64,{$base64Image}",
+                                'detail' => 'high'
                             ]
                         ],
                     ]
                 ]
             ],
-            'max_tokens' => 300,
+            'max_tokens' => 200,
         ]);
 
         // Extract the content from the response
         $content = $response->choices[0]->message->content ?? '';
-
+        dump($response->toArray());
         // Parse JSON response
         $analysis = json_decode($content, true);
-        dump($response->toArray());
         if (!$analysis) {
             return response()->json([
                 'success' => false,
@@ -80,5 +99,10 @@ Respond **only in JSON format**.'
             ], 500);
         }
 
+        // Success
+        return response()->json([
+            'success' => true,
+            'analysis' => $analysis,
+        ]);
     }
 }
