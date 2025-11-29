@@ -1,8 +1,7 @@
-import { MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { useEffect } from 'react';
 import { useAppearance } from '@/hooks/use-appearance';
 import { GeoJSONRoadLayer } from './geojson-road-layer';
-import { MapLegend } from './map-legend';
 import { useGeoJSONLoader } from './use-geojson-loader';
 
 interface LeafletMapProps {
@@ -99,7 +98,6 @@ export function LeafletMap({ onFileLoad, center, uploadedFile }: LeafletMapProps
             >
                 <MapController center={center} loadRoadsFromDatabase={loadRoadsFromDatabase} />
                 <TileLayer url={tileUrl} attribution={attribution} />
-                <ZoomControl position="bottomright" />
 
                 {hasData && (
                     <GeoJSONRoadLayer
@@ -107,8 +105,6 @@ export function LeafletMap({ onFileLoad, center, uploadedFile }: LeafletMapProps
                         hasData={hasData}
                     />
                 )}
-
-                <MapLegend />
             </MapContainer>
         </div >
     );

@@ -1,30 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LeafletMap } from '@/components/map/leaflet-map';
+import { MapLegend } from '@/components/map/map-legend';
+import { UploadDialog } from '@/components/upload-dialog';
 import { Head } from '@inertiajs/react';
-import { Upload, FileJson, Search, X } from 'lucide-react';
+import { Search, X, Camera } from 'lucide-react';
 import { SearchResultItem } from 'nominatim-client';
 
 export default function Dashboard() {
-    const [fileName, setFileName] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
     const [mapCenter, setMapCenter] = useState<{ lat: number; lon: number } | null>(null);
-    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setFileName(file.name);
-            setUploadedFile(file);
-        }
-    };
-
-    const handleButtonClick = () => {
-        fileInputRef.current?.click();
-    };
+    const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const searchCity = async (query: string): Promise<SearchResultItem[] | undefined> => {
         if (query.length < 3) {
@@ -44,11 +33,36 @@ export default function Dashboard() {
         }
     };
 
+    useEffect(() => {
+        // Clear any existing timer
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        // Only search if query has content
+        if (searchQuery.length >= 3) {
+            // Set a new timer to search after 500ms of no typing
+            debounceTimerRef.current = setTimeout(() => {
+                searchCity(searchQuery);
+            }, 500);
+        }
+
+        // Cleanup function to clear timer on unmount
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, [searchQuery]);
+
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const query = e.target.value;
         setSearchQuery(query);
 
-            searchCity(query);
+        // Clear results immediately if query is too short
+        if (query.length < 3) {
+            setSearchResults([]);
+        }
     };
 
     const handleResultClick = (result: SearchResultItem) => {
@@ -65,29 +79,32 @@ export default function Dashboard() {
         setSearchResults([]);
     };
 
+    const handleUploadSuccess = (latitude: number, longitude: number) => {
+        setMapCenter({ lat: latitude, lon: longitude });
+    };
+
     return (
-        <div className="relative h-screen w-full">
+        <div className="relative h-screen w-full overflow-hidden">
             <Head title="Dashboard" />
 
-            {/* Floating controls */}
-            <div className="absolute left-4 right-4 top-4 z-1000 flex flex-col gap-2 md:left-8 md:right-8 md:top-8">
-                {/* Search bar */}
-                <div className="relative mx-auto w-full max-w-md">
-                    <div className="relative flex items-center gap-2 rounded-lg bg-background/95 p-2 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/80">
-                        <Search className="ml-2 h-4 w-4 text-muted-foreground" />
+            {/* Fixed Search Bar - Top */}
+            <div className="absolute left-0 right-0 top-0 z-50">
+                <div className="relative w-full p-3">
+                    <div className="relative flex items-center gap-2 rounded-lg bg-white/95 backdrop-blur border border-input/50 p-2 shadow-lg dark:bg-neutral-900/95">
+                        <Search className="ml-2 h-4 w-4 text-muted-foreground shrink-0" />
                         <Input
                             type="text"
                             placeholder="Search cities..."
                             value={searchQuery}
                             onChange={handleSearchChange}
-                            className="border-0 bg-transparent focus-visible:ring-0"
+                            className="border-0 bg-transparent focus-visible:ring-0 px-2"
                         />
                         {searchQuery && (
                             <Button
                                 onClick={clearSearch}
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0"
+                                className="h-8 w-8 p-0 shrink-0"
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -96,12 +113,12 @@ export default function Dashboard() {
 
                     {/* Search results dropdown */}
                     {searchResults.length > 0 && (
-                        <div className="absolute mt-2 w-full rounded-lg bg-background shadow-lg border">
+                        <div className="absolute mt-2 left-3 right-3 rounded-lg bg-white/95 backdrop-blur dark:bg-neutral-900/95 shadow-xl border border-input/50 z-10 max-h-64 overflow-y-auto">
                             {searchResults.map((result, index) => (
                                 <button
                                     key={index}
                                     onClick={() => handleResultClick(result)}
-                                    className="w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                    className="w-full px-4 py-3 text-left text-sm hover:bg-accent transition-colors first:rounded-t-lg last:rounded-b-lg border-b last:border-b-0"
                                 >
                                     {result.display_name}
                                 </button>
@@ -109,42 +126,40 @@ export default function Dashboard() {
                         </div>
                     )}
                 </div>
+            </div>
 
-                {/* File upload controls */}
-                <div className="mx-auto flex items-center gap-4 rounded-lg bg-background/95 p-2 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/80">
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".json,.geojson"
-                        onChange={handleFileChange}
-                        className="hidden"
-                    />
-                    <Button
-                        onClick={handleButtonClick}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <Upload className="h-4 w-4" />
-                        Load GeoJSON
-                    </Button>
-                    {fileName && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <FileJson className="h-4 w-4" />
-                            <span>{fileName}</span>
-                        </div>
-                    )}
-                </div>
+            {/* Legend - Top Right */}
+            <div className="absolute right-3 top-[72px] z-50 max-w-[200px]">
+                <MapLegend />
             </div>
 
             {/* Map container - full screen */}
-            <div className="h-full w-full">
+            <div className="absolute inset-0 z-0">
                 <LeafletMap
-                    onFileLoad={(file) => setFileName(file.name)}
+                    onFileLoad={() => {}}
                     center={mapCenter}
-                    uploadedFile={uploadedFile}
+                    uploadedFile={null}
                 />
             </div>
+
+            {/* Fixed Upload Button - Bottom */}
+            <div className="absolute left-0 right-0 bottom-0 z-40 p-4">
+                <Button
+                    onClick={() => setUploadDialogOpen(true)}
+                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 shadow-xl"
+                    size="lg"
+                >
+                    <Camera className="h-5 w-5 mr-2" />
+                    Upload Photo with Location
+                </Button>
+            </div>
+
+            {/* Upload Dialog */}
+            <UploadDialog
+                open={uploadDialogOpen}
+                onOpenChange={setUploadDialogOpen}
+                onSuccess={handleUploadSuccess}
+            />
         </div>
     );
 }

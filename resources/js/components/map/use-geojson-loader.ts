@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import RBush from 'rbush';
 import type { RoadGeoJSON, SpatialIndexItem, ViewportBounds } from '@/types';
 
@@ -6,6 +6,31 @@ export function useGeoJSONLoader() {
     const [geoJsonData, setGeoJsonData] = useState<RoadGeoJSON | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Load roads from database on mount
+    useEffect(() => {
+        const loadRoadsFromDatabase = async () => {
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                const response = await fetch('/api/roads');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch roads from database');
+                }
+                const json = await response.json() as RoadGeoJSON;
+                setGeoJsonData(json);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Failed to load roads';
+                setError(message);
+                console.error('Roads loading error:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadRoadsFromDatabase();
+    }, []);
 
     // Create spatial index using RBush
     const spatialIndex = useMemo(() => {
