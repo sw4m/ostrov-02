@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     private array $adminPermissions = [
-        'manage users',
-        'manage posts',
-        'view analytics'
+        'repair roads',
+        'notifications',
     ];
 
     private array $userPermissions = [
-        'view posts',
-        'comment posts'
+        'post photos',
+        'like posts',
+        'post comments',
     ];
 
     public function up()
