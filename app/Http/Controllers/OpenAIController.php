@@ -7,16 +7,47 @@ use OpenAI\Laravel\Facades\OpenAI;
 
 class OpenAIController extends Controller
 {
-    public static function index()
+    public static function index(Request $request = null)
     {
+        // If no request provided, use a test image for console command
+        if ($request === null) {
+            $imagePath = storage_path('app/public/road.png');
 
-        $response = OpenAI::responses()->create([
-            'model' => 'gpt-5.1',
+            if (!file_exists($imagePath)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Test image not found at: ' . $imagePath
+                ], 404);
+            }
+
+            $base64Image = base64_encode(file_get_contents($imagePath));
+            $mimeType = mime_content_type($imagePath);
+        } else {
+            // Validate the request has an image
+            $request->validate([
+                'image' => 'required|image|max:10240', // 10MB max
+            ]);
+
+            // Get the uploaded image and convert to base64
+            $image = $request->file('image');
+            $base64Image = base64_encode(file_get_contents($image->getRealPath()));
+            $mimeType = $image->getMimeType();
+        }
+
+        // Create the response using OpenAI chat API
+        $response = OpenAI::chat()->create([
+            'model' => 'gpt-4o',
             'messages' => [
                 [
+                    'role' => 'system',
+                    'content' => 'You are an expert in road and pavement conditions. Analyze images and provide structured JSON responses.'
+                ],
+                [
                     'role' => 'user',
-                    'content' =>[
-                        ['type' => 'You are an expert in road and pavement conditions.
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => 'You are an expert in road and pavement conditions.
 
 Analyze the given image and provide a structured JSON output with the following fields:
 
@@ -25,20 +56,37 @@ Analyze the given image and provide a structured JSON output with the following 
 3. "condition_score": a number from 0 to 1 representing the condition of the road (1 = perfect, 0 = completely damaged). If road_present is close to 0, you can set this to null.
 4. "confidence": a number from 0 to 1 representing how confident you are in this assessment.
 
-Respond **only in JSON format**.'],
-[
-    'type'=> 'image',
-    'image' => fopen(storage_path('app/public/road.png'), 'r'),
-
-]
+Respond **only in JSON format**.'
+                        ],
+                        [
+                            'type' => 'image_url',
+                            'image_url' => [
+                                'url' => "data:{$mimeType};base64,{$base64Image}"
+                            ]
+                        ]
                     ]
-                    
+                ]
             ],
-            ],
+            'max_tokens' => 300,
         ]);
 
-            dump($response->toArray());
+        // Extract the content from the response
+        $content = $response->choices[0]->message->content ?? '';
 
-        return response()->json($response);
+        // Parse JSON response
+        $analysis = json_decode($content, true);
+
+        if (!$analysis) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid AI response format',
+                'raw_response' => $content
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'analysis' => $analysis
+        ]);
     }
 }
