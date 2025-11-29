@@ -40,14 +40,7 @@ class OpenAIController extends Controller
             'messages' => [
                 [
                     'role' => 'system',
-                    'content' => 'You are an expert in road and pavement conditions. Analyze images and provide structured JSON responses.'
-                ],
-                [
-                    'role' => 'user',
-                    'content' => [
-                        [
-                            'type' => 'text',
-                            'text' => 'You are an expert in road and pavement conditions.
+                    'content' => 'You are an expert in road and pavement conditions.
 
 Analyze the given image and provide a structured JSON output with the following fields:
 
@@ -57,13 +50,16 @@ Analyze the given image and provide a structured JSON output with the following 
 4. "confidence": a number from 0 to 1 representing how confident you are in this assessment.
 
 Respond **only in JSON format**.'
-                        ],
-                        [
+                ],
+                [
+                    'role' => 'user',
+                    'content' => [
+                                                [
                             'type' => 'image_url',
                             'image_url' => [
                                 'url' => "data:{$mimeType};base64,{$base64Image}"
                             ]
-                        ]
+                        ],
                     ]
                 ]
             ],
@@ -75,7 +71,7 @@ Respond **only in JSON format**.'
 
         // Parse JSON response
         $analysis = json_decode($content, true);
-
+        dump($response->toArray());
         if (!$analysis) {
             return response()->json([
                 'success' => false,
@@ -84,9 +80,5 @@ Respond **only in JSON format**.'
             ], 500);
         }
 
-        return response()->json([
-            'success' => true,
-            'analysis' => $analysis
-        ]);
     }
 }
