@@ -41,6 +41,7 @@ class OpenAIController extends Controller
                 [
                     'role' => 'system',
 <<<<<<< HEAD
+<<<<<<< HEAD
                     'content' => 'You are an expert in road and pavement conditions.
 =======
                     'content' => 'You are an expert in road and pavement conditions. Analyze images and provide structured JSON responses.'
@@ -52,6 +53,9 @@ class OpenAIController extends Controller
                             'type' => 'text',
                             'text' => 'You are an expert in road and pavement conditions.
 >>>>>>> eee1a31 (prompt fix)
+=======
+                    'content' => 'You are an expert in road and pavement conditions.
+>>>>>>> 128dbde (Dumping prompt)
 
 Analyze the given image and provide a structured JSON output with the following fields:
 
@@ -62,24 +66,34 @@ Analyze the given image and provide a structured JSON output with the following 
 
 Respond **only in JSON format**.'
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 128dbde (Dumping prompt)
                 ],
                 [
                     'role' => 'user',
                     'content' => [
                                                 [
+<<<<<<< HEAD
 =======
                         ],
                         [
 >>>>>>> eee1a31 (prompt fix)
+=======
+>>>>>>> 128dbde (Dumping prompt)
                             'type' => 'image_url',
                             'image_url' => [
                                 'url' => "data:{$mimeType};base64,{$base64Image}"
                             ]
 <<<<<<< HEAD
+<<<<<<< HEAD
                         ],
 =======
                         ]
 >>>>>>> eee1a31 (prompt fix)
+=======
+                        ],
+>>>>>>> 128dbde (Dumping prompt)
                     ]
                 ]
             ],
@@ -105,7 +119,7 @@ Respond **only in JSON format**.'
 
         // Parse JSON response
         $analysis = json_decode($content, true);
-
+        dump($response->toArray());
         if (!$analysis) {
             return response()->json([
                 'success' => false,
@@ -114,10 +128,13 @@ Respond **only in JSON format**.'
             ], 500);
         }
 
+<<<<<<< HEAD
         return response()->json([
             'success' => true,
             'analysis' => $analysis
         ]);
 >>>>>>> eee1a31 (prompt fix)
+=======
+>>>>>>> 128dbde (Dumping prompt)
     }
 }
