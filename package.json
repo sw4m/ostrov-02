@@ -54,6 +54,7 @@
         "laravel-vite-plugin": "^2.0",
         "leaflet": "^1.9.4",
         "lucide-react": "^0.475.0",
+        "overpass-ts": "^4.3.8",
         "react": "19.0.0-rc.1",
         "react-dom": "19.0.0-rc.1",
         "react-leaflet": "5.0.0-rc.2",
