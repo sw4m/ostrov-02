@@ -9,7 +9,7 @@ return new class extends Migration
 {
     private array $adminPermissions = [
         'repair roads',
-        'notifications',
+        'post announcements',
     ];
 
     private array $userPermissions = [
