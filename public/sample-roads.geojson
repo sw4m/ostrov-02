@@ -1,0 +1,90 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [14.4178, 50.0855],
+          [14.4278, 50.0875],
+          [14.4378, 50.0895]
+        ]
+      },
+      "properties": {
+        "condition": "excellent",
+        "severity": 0.1,
+        "name": "Václavské náměstí",
+        "lastInspected": "2025-11-20"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [14.4278, 50.0875],
+          [14.4328, 50.0825],
+          [14.4378, 50.0775]
+        ]
+      },
+      "properties": {
+        "condition": "good",
+        "severity": 0.3,
+        "name": "Národní třída",
+        "lastInspected": "2025-11-15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [14.4078, 50.0755],
+          [14.4128, 50.0805],
+          [14.4178, 50.0855]
+        ]
+      },
+      "properties": {
+        "condition": "poor",
+        "severity": 0.65,
+        "name": "Masarykovo nábřeží",
+        "lastInspected": "2025-10-30"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [14.4478, 50.0955],
+          [14.4428, 50.0905],
+          [14.4378, 50.0895]
+        ]
+      },
+      "properties": {
+        "condition": "critical",
+        "severity": 0.9,
+        "name": "Wilsonova",
+        "lastInspected": "2025-09-05"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [14.3978, 50.0655],
+          [14.4028, 50.0705],
+          [14.4078, 50.0755]
+        ]
+      },
+      "properties": {
+        "condition": "good",
+        "severity": 0.25,
+        "name": "Palackého náměstí",
+        "lastInspected": "2025-11-10"
+      }
+    }
+  ]
+}
