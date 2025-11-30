@@ -1,7 +1,5 @@
 import * as React from 'react'
 import { Button } from '@/components/ui/button';
-import { usePage } from '@inertiajs/react';
-import AnnouncementDialog from './announcement-dialog';
 import {
     Dialog,
     DialogContent,

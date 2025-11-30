@@ -121,7 +121,7 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRo
         const condition = props.condition;
 
         // If no condition data, show as gray
-        if (!condition || condition === 'unknown') {
+        if (!condition) {
             return CONDITION_STYLES.unknown;
         }
 
@@ -133,9 +133,9 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRo
         if (!feature.properties) return;
 
         const props = feature.properties as RoadFeatureProperties;
-        // Use React dialog instead of Leaflet popup when provided
-        if (typeof (layer as any).on === 'function' && onFeatureClick) {
-            (layer as any).on('click', () => {
+        // Najskredsi if statement aky som kedy videl, neznasam laravel
+        if ('on' in layer && typeof layer.on === 'function' && onFeatureClick) {
+            layer.on('click', () => {
                 onFeatureClick(props);
             });
         } else {
