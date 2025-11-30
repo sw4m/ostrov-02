@@ -249,12 +249,12 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
                         </div>
                     )}
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => {
+                        {/* <Button variant="outline" onClick={() => {
                             setSelectedImage(null);
                             setSelectedReport(null);
                         }}>
                             Close
-                        </Button>
+                        </Button> */}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

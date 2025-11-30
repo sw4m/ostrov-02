@@ -162,14 +162,14 @@ export function RoadSelectionDialog({
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-2">
-                        <Button
+                        {/* <Button
                             variant="outline"
                             onClick={() => onOpenChange(false)}
                             disabled={isSubmitting}
                             className="flex-1"
                         >
                             Cancel
-                        </Button>
+                        </Button> */}
                         <Button
                             onClick={handleSubmit}
                             disabled={isSubmitting || !selectedRoadId}

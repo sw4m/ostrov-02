@@ -334,14 +334,14 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
                     {/* Action Buttons */}
                     {selectedFile && !success && (
                         <div className="flex gap-2 pt-2">
-                            <Button
+                            {/* <Button
                                 variant="outline"
                                 onClick={handleClose}
                                 disabled={isUploading}
                                 className="flex-1"
                             >
                                 Cancel
-                            </Button>
+                            </Button> */}
                             <Button
                                 onClick={handleUpload}
                                 disabled={isUploading}

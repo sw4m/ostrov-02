@@ -80,9 +80,9 @@ export function AnnouncementDialog({ open, onOpenChange, roadId, onCreate }: Pro
 
           <DialogFooter>
             <div className="flex gap-2 w-full">
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+              {/* <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                 Cancel
-              </Button>
+              </Button> */}
               <Button type="submit" className="ml-auto" disabled={loading}>
                 {loading ? 'Saving...' : 'Submit'}
               </Button>
