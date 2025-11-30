@@ -96,7 +96,7 @@ export function LeafletMap({ onFileLoad, center, uploadedFile, highlightedRoadId
     return (
         <div className="relative h-full w-full">
             <MapContainer
-                center={[48.713950, 21.258081]}
+                center={[48.73186705397255, 21.24299601733856]}
                 zoom={13}
                 zoomControl={false}
                 className="h-full w-full"

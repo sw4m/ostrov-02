@@ -31,6 +31,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('api/upload-photo', [PhotoUploadController::class, 'store'])
         ->name('photo.upload');
 
+    Route::post('api/confirm-road-selection', [PhotoUploadController::class, 'confirmRoadSelection'])
+        ->name('photo.confirm-road');
+
     Route::put('api/reports/{report}', [PhotoUploadController::class, 'update'])
         ->name('report.update');
 });

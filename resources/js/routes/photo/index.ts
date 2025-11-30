@@ -55,8 +55,65 @@ uploadForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 upload.form = uploadForm
 
+/**
+* @see \App\Http\Controllers\PhotoUploadController::confirmRoad
+* @see app/Http/Controllers/PhotoUploadController.php:176
+* @route '/api/confirm-road-selection'
+*/
+export const confirmRoad = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: confirmRoad.url(options),
+    method: 'post',
+})
+
+confirmRoad.definition = {
+    methods: ["post"],
+    url: '/api/confirm-road-selection',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\PhotoUploadController::confirmRoad
+* @see app/Http/Controllers/PhotoUploadController.php:176
+* @route '/api/confirm-road-selection'
+*/
+confirmRoad.url = (options?: RouteQueryOptions) => {
+    return confirmRoad.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\PhotoUploadController::confirmRoad
+* @see app/Http/Controllers/PhotoUploadController.php:176
+* @route '/api/confirm-road-selection'
+*/
+confirmRoad.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: confirmRoad.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PhotoUploadController::confirmRoad
+* @see app/Http/Controllers/PhotoUploadController.php:176
+* @route '/api/confirm-road-selection'
+*/
+const confirmRoadForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: confirmRoad.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PhotoUploadController::confirmRoad
+* @see app/Http/Controllers/PhotoUploadController.php:176
+* @route '/api/confirm-road-selection'
+*/
+confirmRoadForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: confirmRoad.url(options),
+    method: 'post',
+})
+
+confirmRoad.form = confirmRoadForm
+
 const photo = {
     upload: Object.assign(upload, upload),
+    confirmRoad: Object.assign(confirmRoad, confirmRoad),
 }
 
 export default photo

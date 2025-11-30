@@ -45,11 +45,40 @@ export interface User {
 // Map types
 export type RoadCondition = 'excellent' | 'good' | 'poor' | 'critical';
 
+export interface AIAnalysis {
+    type?: string;
+    description?: string;
+    condition?: number;
+    severity?: string;
+    detected_issues?: string[];
+    road_probability?: number;
+    user_confirmed?: boolean;
+}
+
+export interface Report {
+    id: number;
+    type: 'crack' | 'pothole' | 'damage';
+    description?: string;
+    status: 'pending' | 'verified' | 'rejected';
+    photo_url?: string;
+    condition?: number;
+    ai_analysis?: AIAnalysis;
+    latitude: number;
+    longitude: number;
+    created_at: string;
+    user_id: number;
+}
+
 export interface RoadFeatureProperties {
+    id: number;
     condition: RoadCondition;
     severity: number; // 0-1 scale
     name?: string;
     lastInspected?: string;
+    reports_count: number;
+    images: string[];
+    reports: Report[];
+    status?: string;
     [key: string]: unknown;
 }
 

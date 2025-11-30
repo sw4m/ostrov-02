@@ -24,10 +24,42 @@ class RoadController extends Controller
             ->where('bbox_max_lat', '>=', $validated['minLat'])
             ->where('bbox_min_lng', '<=', $validated['maxLng'])
             ->where('bbox_max_lng', '>=', $validated['minLng'])
+            ->with('reports')
             ->get();
 
         // Convert to GeoJSON format
         $features = $roads->map(function ($road) {
+            // Calculate average condition from all reports
+            $reportConditions = $road->reports->pluck('condition')->filter(function ($condition) {
+                return $condition !== null;
+            });
+
+            $averageCondition = $reportConditions->count() > 0
+                ? $reportConditions->avg()
+                : $road->condition;
+
+            // Collect all photo URLs from reports
+            $images = $road->reports->pluck('photo_url')->filter(function ($url) {
+                return $url !== null;
+            })->values()->all();
+
+            // Prepare full report data
+            $reports = $road->reports->map(function ($report) {
+                return [
+                    'id' => $report->id,
+                    'type' => $report->type,
+                    'description' => $report->description,
+                    'status' => $report->status,
+                    'photo_url' => $report->photo_url,
+                    'condition' => $report->condition,
+                    'ai_analysis' => $report->ai_analysis,
+                    'latitude' => $report->latitude,
+                    'longitude' => $report->longitude,
+                    'created_at' => $report->created_at,
+                    'user_id' => $report->user_id,
+                ];
+            })->all();
+
             return [
                 'type' => 'Feature',
                 'geometry' => [
@@ -41,8 +73,11 @@ class RoadController extends Controller
                     'osm_id' => $road->osm_id,
                     'name' => $road->name,
                     'highway_type' => $road->highway_type,
-                    'condition' => $this->mapConditionToLabel($road->condition),
-                    'severity' => $road->condition ? (1 - $road->condition) : 0,
+                    'condition' => $this->mapConditionToLabel($averageCondition),
+                    'severity' => $averageCondition ? (1 - $averageCondition) : 0,
+                    'reports_count' => $road->reports->count(),
+                    'images' => $images,
+                    'reports' => $reports,
                 ],
             ];
         });

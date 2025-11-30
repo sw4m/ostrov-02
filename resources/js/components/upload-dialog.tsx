@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Camera, Upload, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ReportFormDialog } from './report-form-dialog';
+import { RoadSelectionDialog } from './road-selection-dialog';
 
 interface UploadDialogProps {
     open: boolean;
@@ -35,6 +36,26 @@ interface ReportData {
     };
 }
 
+interface RoadCandidate {
+    id: number;
+    name: string;
+    distance: number;
+    highway_type: string;
+}
+
+interface PendingPhotoData {
+    latitude: number;
+    longitude: number;
+    photo_url: string;
+    ai_analysis: {
+        type?: string;
+        description?: string;
+        condition?: number;
+        severity?: string;
+        detected_issues?: string[];
+    };
+}
+
 export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -44,6 +65,9 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
     const [success, setSuccess] = useState(false);
     const [reportData, setReportData] = useState<ReportData | null>(null);
     const [showReportForm, setShowReportForm] = useState(false);
+    const [showRoadSelection, setShowRoadSelection] = useState(false);
+    const [roadCandidates, setRoadCandidates] = useState<RoadCandidate[]>([]);
+    const [pendingPhotoData, setPendingPhotoData] = useState<PendingPhotoData | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const resetState = useCallback(() => {
@@ -54,10 +78,20 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         setSuccess(false);
         setReportData(null);
         setShowReportForm(false);
+        setShowRoadSelection(false);
+        setRoadCandidates([]);
+        setPendingPhotoData(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     }, []);
+
+    // Reset state when dialog opens
+    useEffect(() => {
+        if (open) {
+            resetState();
+        }
+    }, [open, resetState]);
 
     const handleFileSelect = useCallback((file: File) => {
         if (!file.type.startsWith('image/')) {
@@ -143,6 +177,24 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
             console.log('Response data:', data);
 
             if (data.success) {
+                // Check if road selection is required
+                if (data.requires_road_selection && data.candidates) {
+                    setRoadCandidates(data.candidates);
+                    setPendingPhotoData({
+                        latitude: data.latitude,
+                        longitude: data.longitude,
+                        photo_url: data.photo_url,
+                        ai_analysis: data.ai_analysis,
+                    });
+                    setSuccess(true);
+                    // Close upload dialog and open road selection
+                    setTimeout(() => {
+                        onOpenChange(false);
+                        setShowRoadSelection(true);
+                    }, 800);
+                    return;
+                }
+
                 // Check road probability
                 const roadProbability = data.ai_analysis?.road_probability ?? 1.0;
 
@@ -320,6 +372,17 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
                 onOpenChange={setShowReportForm}
                 onSuccess={handleReportFormSuccess}
                 reportData={reportData}
+            />
+        )}
+
+        {/* Road Selection Dialog */}
+        {pendingPhotoData && roadCandidates.length > 0 && (
+            <RoadSelectionDialog
+                open={showRoadSelection}
+                onOpenChange={setShowRoadSelection}
+                candidates={roadCandidates}
+                photoData={pendingPhotoData}
+                onSuccess={handleReportFormSuccess}
             />
         )}
         </>

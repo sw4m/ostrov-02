@@ -18,6 +18,8 @@ class Report extends Model
         'ai_analysis',
         'latitude',
         'longitude',
+        'distance_to_road',
+        'road_manually_selected',
     ];
 
     protected $casts = [
@@ -25,6 +27,8 @@ class Report extends Model
         'condition' => 'decimal:2',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
+        'distance_to_road' => 'decimal:2',
+        'road_manually_selected' => 'boolean',
     ];
 
     public function road(): BelongsTo

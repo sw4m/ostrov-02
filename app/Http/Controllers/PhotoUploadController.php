@@ -38,9 +38,9 @@ class PhotoUploadController extends Controller
             // Check if GPS data exists, otherwise use default coordinates
             if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
                 Log::warning('No GPS data in photo, using default coordinates');
-                // Default coordinates: Košice, Slovakia
-                $latitude = 48.732282;
-                $longitude = 21.242572;
+                // Default coordinates
+                $latitude = 48.73186705397255;
+                $longitude = 21.24299601733856;
             } else {
                 // Convert EXIF GPS to decimal coordinates
                 $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
@@ -50,8 +50,8 @@ class PhotoUploadController extends Controller
 
                 if ($latitude === null || $longitude === null) {
                     Log::warning('Invalid GPS data in photo, using default coordinates');
-                    $latitude = 48.732282;
-                    $longitude = 21.242572;
+                    $latitude = 48.73186705397255;
+                    $longitude = 21.24299601733856;
                 }
             }
 
@@ -87,10 +87,33 @@ class PhotoUploadController extends Controller
             $aiAnalysis = $this->analyzeRoadCondition($tempPath);
             Log::info('AI analysis complete', ['type' => $aiAnalysis['type'] ?? 'unknown']);
 
-            // Find or create nearest road
+            // Find nearest road with distance calculation
             Log::info('Finding nearest road');
-            $road = $this->findOrCreateNearestRoad($latitude, $longitude);
-            Log::info('Road found/created', ['road_id' => $road->id]);
+            $roadMatch = $this->findNearestRoad($latitude, $longitude);
+
+            // If no clear match or multiple candidates, return them for user selection
+            if (isset($roadMatch['requires_selection'])) {
+                Log::info('Multiple road candidates found, requiring user selection');
+                return response()->json([
+                    'success' => true,
+                    'requires_road_selection' => true,
+                    'candidates' => $roadMatch['candidates'],
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'photo_url' => $photoUrl,
+                    'filename' => $filename,
+                    'ai_analysis' => $aiAnalysis,
+                    'temp_photo_path' => $storagePath,
+                ]);
+            }
+
+            if (!isset($roadMatch['road'])) {
+                throw new \Exception('No road found within acceptable distance');
+            }
+
+            $road = $roadMatch['road'];
+            $distance = $roadMatch['distance'];
+            Log::info('Road found', ['road_id' => $road->id, 'distance' => $distance]);
 
             // Create report in database
             Log::info('Creating report');
@@ -105,6 +128,8 @@ class PhotoUploadController extends Controller
                 'ai_analysis' => $aiAnalysis,
                 'latitude' => $latitude,
                 'longitude' => $longitude,
+                'distance_to_road' => $distance,
+                'road_manually_selected' => false,
             ]);
 
             // Update road condition based on the report
@@ -141,6 +166,71 @@ class PhotoUploadController extends Controller
                 'success' => false,
                 'error' => 'An error occurred while processing your photo. Please try again.',
                 'debug' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Confirm manual road selection and create report
+     */
+    public function confirmRoadSelection(Request $request)
+    {
+        $validated = $request->validate([
+            'road_id' => 'required|exists:roads,id',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'photo_url' => 'required|string',
+            'ai_analysis' => 'required|array',
+        ]);
+
+        try {
+            $road = Road::findOrFail($validated['road_id']);
+            $distance = $road->distanceToPoint($validated['latitude'], $validated['longitude']);
+
+            // Create report with manually selected road
+            $report = Report::create([
+                'road_id' => $road->id,
+                'user_id' => Auth::id() ?? 1,
+                'type' => $validated['ai_analysis']['type'] ?? 'damage',
+                'description' => $validated['ai_analysis']['description'] ?? 'Road condition report from photo',
+                'status' => 'pending',
+                'photo_url' => $validated['photo_url'],
+                'condition' => $validated['ai_analysis']['condition'] ?? null,
+                'ai_analysis' => $validated['ai_analysis'],
+                'latitude' => $validated['latitude'],
+                'longitude' => $validated['longitude'],
+                'distance_to_road' => $distance,
+                'road_manually_selected' => true,
+            ]);
+
+            // Update road condition
+            if (isset($validated['ai_analysis']['condition']) && $validated['ai_analysis']['condition'] !== null) {
+                if ($road->condition === null) {
+                    $road->condition = $validated['ai_analysis']['condition'];
+                } else {
+                    $road->condition = min($road->condition, $validated['ai_analysis']['condition']);
+                }
+                $road->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Report created successfully!',
+                'report_id' => $report->id,
+                'road_id' => $road->id,
+                'latitude' => $validated['latitude'],
+                'longitude' => $validated['longitude'],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to confirm road selection', [
+                'error' => $e->getMessage(),
+                'road_id' => $validated['road_id'] ?? null,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to create report. Please try again.',
             ], 500);
         }
     }
@@ -274,19 +364,75 @@ class PhotoUploadController extends Controller
     }
 
     /**
-     * Find or create the nearest road to the given coordinates
+     * Find the nearest road to the given coordinates using actual distance calculation
+     * Returns array with 'road' and 'distance', or 'requires_selection' with 'candidates'
      */
-    private function findOrCreateNearestRoad(float $latitude, float $longitude): Road
+    private function findNearestRoad(float $latitude, float $longitude): array
     {
-        // Try to find nearest road by bounding box
-        $nearestRoad = Road::where('bbox_min_lat', '<=', $latitude)
-            ->where('bbox_max_lat', '>=', $latitude)
-            ->where('bbox_min_lng', '<=', $longitude)
-            ->where('bbox_max_lng', '>=', $longitude)
-            ->first();
+        // Distance thresholds in meters
+        $maxDistance = 50; // Maximum acceptable distance
+        $ambiguousThreshold = 10; // If multiple roads within this distance, ask user
 
-        // If found within bounding box, use it
-        return $nearestRoad;
+        // Expand search area by ~0.001 degrees (~111m)
+        $searchBuffer = 0.001;
+
+        // Get candidate roads within expanded bounding box
+        $candidates = Road::where('bbox_min_lat', '<=', $latitude + $searchBuffer)
+            ->where('bbox_max_lat', '>=', $latitude - $searchBuffer)
+            ->where('bbox_min_lng', '<=', $longitude + $searchBuffer)
+            ->where('bbox_max_lng', '>=', $longitude - $searchBuffer)
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            throw new \Exception('No roads found near this location');
+        }
+
+        // Calculate actual distances
+        $roadsWithDistance = [];
+        foreach ($candidates as $road) {
+            $distance = $road->distanceToPoint($latitude, $longitude);
+            if ($distance <= $maxDistance) {
+                $roadsWithDistance[] = [
+                    'road' => $road,
+                    'distance' => round($distance, 2),
+                ];
+            }
+        }
+
+        if (empty($roadsWithDistance)) {
+            throw new \Exception('No roads found within ' . $maxDistance . 'm of this location');
+        }
+
+        // Sort by distance
+        usort($roadsWithDistance, fn($a, $b) => $a['distance'] <=> $b['distance']);
+
+        // Check if we have ambiguous matches (multiple roads very close)
+        $closestDistance = $roadsWithDistance[0]['distance'];
+        $ambiguousCandidates = array_filter(
+            $roadsWithDistance,
+            fn($item) => $item['distance'] <= $closestDistance + $ambiguousThreshold
+        );
+
+        // If multiple roads are similarly close, require user selection
+        if (count($ambiguousCandidates) > 1) {
+            return [
+                'requires_selection' => true,
+                'candidates' => array_map(function ($item) use ($latitude, $longitude) {
+                    return [
+                        'id' => $item['road']->id,
+                        'name' => $item['road']->name,
+                        'distance' => $item['distance'],
+                        'highway_type' => $item['road']->highway_type,
+                    ];
+                }, array_values($ambiguousCandidates)),
+            ];
+        }
+
+        // Return the closest road
+        return [
+            'road' => $roadsWithDistance[0]['road'],
+            'distance' => $roadsWithDistance[0]['distance'],
+        ];
     }
 
     /**
