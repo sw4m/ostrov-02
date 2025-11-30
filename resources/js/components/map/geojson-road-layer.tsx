@@ -118,7 +118,7 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRo
         }
 
         const condition = props.condition;
-        
+
         // If no condition data, show as gray
         if (!condition || condition === 'unknown') {
             return CONDITION_STYLES.unknown;

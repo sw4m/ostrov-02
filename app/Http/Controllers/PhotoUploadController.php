@@ -107,6 +107,20 @@ class PhotoUploadController extends Controller
                 'longitude' => $longitude,
             ]);
 
+            // Update road condition based on the report
+            if (isset($aiAnalysis['condition']) && $aiAnalysis['condition'] !== null) {
+                // If road has no condition yet, use the report's condition
+                // Otherwise, calculate average of existing condition and new report
+                if ($road->condition === null) {
+                    $road->condition = $aiAnalysis['condition'];
+                } else {
+                    // Calculate weighted average (gives more weight to worse conditions)
+                    $road->condition = min($road->condition, $aiAnalysis['condition']);
+                }
+                $road->save();
+                Log::info('Road condition updated', ['road_id' => $road->id, 'new_condition' => $road->condition]);
+            }
+
             Log::info('Report created', ['report_id' => $report->id]);
             Log::info('Sending success response');
 
