@@ -134,11 +134,9 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRo
         const props = feature.properties as RoadFeatureProperties;
         const popupContent = `
             <div class="p-2">
-                <h3 class="font-semibold text-sm mb-1">${props.name || 'Unnamed Road'}</h3>
+                <h3 class="font-semibold text-sm mb-1"> ${props.name != "Unnamed Road" ? 'Street ' + props.name : 'Unnamed Street'}</h3>
                 <div class="text-xs space-y-1">
                     <p><span class="font-medium">Condition:</span> ${props.condition || 'Unknown'}</p>
-                    <p><span class="font-medium">Severity:</span> ${((props.severity || 0) * 100).toFixed(0)}%</p>
-                    ${props.lastInspected ? `<p><span class="font-medium">Last Inspected:</span> ${props.lastInspected}</p>` : ''}
                 </div>
             </div>
         `;

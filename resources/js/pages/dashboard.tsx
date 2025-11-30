@@ -15,6 +15,7 @@ export default function Dashboard() {
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [highlightedRoadId, setHighlightedRoadId] = useState<number | null>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const skipNextSearchRef = useRef(false);
 
     const searchCity = async (query: string): Promise<SearchResultItem[] | undefined> => {
         if (query.length < 3) {
@@ -35,6 +36,12 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
+        // If we just selected a result, skip the next debounced search
+        if (skipNextSearchRef.current) {
+            skipNextSearchRef.current = false;
+            return;
+        }
+
         // Clear any existing timer
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
@@ -69,6 +76,13 @@ export default function Dashboard() {
     const handleResultClick = (result: SearchResultItem) => {
         const lat = parseFloat(result.lat);
         const lon = parseFloat(result.lon);
+
+        // Prevent the debounced effect from re-searching for the display name
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+            debounceTimerRef.current = null;
+        }
+        skipNextSearchRef.current = true;
 
         setMapCenter({ lat, lon });
         setSearchQuery(result.display_name);
