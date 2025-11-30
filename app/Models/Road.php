@@ -36,7 +36,7 @@ class Road extends Model
 
     /**
      * Calculate the minimum distance from a point to this road's geometry in meters
-     */
+     */ 
     public function distanceToPoint(float $latitude, float $longitude): float
     {
         if (empty($this->geometry)) {
@@ -134,6 +134,8 @@ class Road extends Model
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $earthRadius * $c;
+    }
+
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
