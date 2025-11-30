@@ -117,33 +117,6 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
                                                     className="min-w-[250px] shrink-0 p-2 rounded-md border flex flex-col justify-center bg-[#F67D3C] relative"
                                                     style={{ WebkitOverflowScrolling: 'touch' }}
                                                 >
-                                                    {/* show delete X if admin */}
-                                                    {isAdminUser && (
-                                                        <button
-                                                            onClick={async () => {
-                                                                try {
-                                                                    const tokenEl = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null
-                                                                    const token = tokenEl?.getAttribute('content') || ''
-                                                                    const res = await fetch(`/api/announcements/${ann.id}`, {
-                                                                        method: 'DELETE',
-                                                                        headers: {
-                                                                            'X-CSRF-TOKEN': token,
-                                                                            Accept: 'application/json',
-                                                                        },
-                                                                        credentials: 'same-origin',
-                                                                    })
-                                                                    if (!res.ok) throw new Error('Delete failed')
-                                                                    setLocalAnnouncements((s) => s.filter((a) => a.id !== ann.id))
-                                                                } catch (err) {
-                                                                    console.error(err)
-                                                                }
-                                                            }}
-                                                            className="absolute top-2 right-2 rounded-full bg-white text-sm w-6 h-6 flex items-center justify-center text-black"
-                                                            title="Delete announcement"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    )}
                                                     <p className="text-sm">{ann.description}</p>
                                                 </div>
                                             ))}
