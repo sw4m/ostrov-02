@@ -12,15 +12,41 @@ use App\Models\Report;
 use App\Models\Road;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+
 class PhotoUploadController extends Controller
 {
 
     public function store(Request $request)
     {
-        Log::info('Photo upload started');
+        Log::info('Photo upload started', [
+            'has_photo' => $request->hasFile('photo'),
+            'files' => $request->allFiles(),
+            'input_photo' => $request->input('photo'),
+            'content_type' => $request->header('Content-Type'),
+            'method' => $request->method(),
+            'all_input' => $request->all(),
+        ]);
+
+        // Check if file exists before validation
+        if (!$request->hasFile('photo')) {
+            Log::error('No photo file in request');
+            return response()->json([
+                'success' => false,
+                'error' => 'No photo file received. Please ensure you have selected an image file.',
+                'debug' => config('app.debug') ? [
+                    'files' => $request->allFiles(),
+                    'input' => $request->all(),
+                ] : null,
+            ], 422);
+        }
 
         $request->validate([
             'photo' => 'required|image|mimes:jpeg,jpg,png,heic|max:10240', // 10MB max
+        ], [
+            'photo.required' => 'Please select a photo to upload.',
+            'photo.image' => 'The file must be an image.',
+            'photo.mimes' => 'The photo must be a JPEG, JPG, PNG, or HEIC file.',
+            'photo.max' => 'The photo size must not exceed 10MB.',
         ]);
 
         Log::info('Validation passed');
@@ -36,30 +62,24 @@ class PhotoUploadController extends Controller
                 'size' => $file->getSize(),
             ]);
 
-            // Extract EXIF data - try multiple methods
             $exif = false;
             $latitude = null;
             $longitude = null;
 
-            // Check if exif extension is available
-            if (!function_exists('exif_read_data')) {
-                Log::error('EXIF extension not available on server');
-            } else {
-                // Attempt to read EXIF data
-                try {
-                    $exif = @exif_read_data($tempPath, 0, true);
-                    if ($exif !== false) {
-                        Log::info('EXIF data found', [
-                            'sections' => array_keys($exif),
-                            'has_gps' => isset($exif['GPS']),
-                            'gps_data' => isset($exif['GPS']) ? $exif['GPS'] : null,
-                        ]);
-                    } else {
-                        Log::warning('exif_read_data returned false');
-                    }
-                } catch (\Exception $e) {
-                    Log::error('EXIF reading failed', ['error' => $e->getMessage()]);
+            // Attempt to read EXIF data
+            try {
+                $exif = @exif_read_data($tempPath, 0, true);
+                if ($exif !== false) {
+                    Log::info('EXIF data found', [
+                        'sections' => array_keys($exif),
+                        'has_gps' => isset($exif['GPS']),
+                        'gps_data' => isset($exif['GPS']) ? $exif['GPS'] : null,
+                    ]);
+                } else {
+                    Log::warning('exif_read_data returned false');
                 }
+            } catch (\Exception $e) {
+                Log::error('EXIF reading failed', ['error' => $e->getMessage()]);
             }
 
             // Try to extract GPS coordinates from EXIF
@@ -226,7 +246,6 @@ class PhotoUploadController extends Controller
                     'used_default_coords' => ($latitude == 48.73186705397255 && $longitude == 21.24299601733856),
                 ] : null,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Photo upload failed', [
                 'error' => $e->getMessage(),
@@ -294,7 +313,6 @@ class PhotoUploadController extends Controller
                 'latitude' => $validated['latitude'],
                 'longitude' => $validated['longitude'],
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to confirm road selection', [
                 'error' => $e->getMessage(),
@@ -344,7 +362,6 @@ class PhotoUploadController extends Controller
                 'message' => 'Report updated successfully!',
                 'report' => $report,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Report update error', [
                 'report_id' => $report->id,
@@ -422,7 +439,6 @@ class PhotoUploadController extends Controller
             }
 
             return $analysis;
-
         } catch (\Exception $e) {
             // Return default analysis if AI fails
             return [

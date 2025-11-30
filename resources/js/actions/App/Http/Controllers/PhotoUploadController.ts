@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
+* @see app/Http/Controllers/PhotoUploadController.php:19
 * @route '/api/upload-photo'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
+* @see app/Http/Controllers/PhotoUploadController.php:19
 * @route '/api/upload-photo'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
+* @see app/Http/Controllers/PhotoUploadController.php:19
 * @route '/api/upload-photo'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
+* @see app/Http/Controllers/PhotoUploadController.php:19
 * @route '/api/upload-photo'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::store
-* @see app/Http/Controllers/PhotoUploadController.php:18
+* @see app/Http/Controllers/PhotoUploadController.php:19
 * @route '/api/upload-photo'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -57,7 +57,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoadSelection
-* @see app/Http/Controllers/PhotoUploadController.php:249
+* @see app/Http/Controllers/PhotoUploadController.php:268
 * @route '/api/confirm-road-selection'
 */
 export const confirmRoadSelection = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -72,7 +72,7 @@ confirmRoadSelection.definition = {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoadSelection
-* @see app/Http/Controllers/PhotoUploadController.php:249
+* @see app/Http/Controllers/PhotoUploadController.php:268
 * @route '/api/confirm-road-selection'
 */
 confirmRoadSelection.url = (options?: RouteQueryOptions) => {
@@ -81,7 +81,7 @@ confirmRoadSelection.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoadSelection
-* @see app/Http/Controllers/PhotoUploadController.php:249
+* @see app/Http/Controllers/PhotoUploadController.php:268
 * @route '/api/confirm-road-selection'
 */
 confirmRoadSelection.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -91,7 +91,7 @@ confirmRoadSelection.post = (options?: RouteQueryOptions): RouteDefinition<'post
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoadSelection
-* @see app/Http/Controllers/PhotoUploadController.php:249
+* @see app/Http/Controllers/PhotoUploadController.php:268
 * @route '/api/confirm-road-selection'
 */
 const confirmRoadSelectionForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -101,7 +101,7 @@ const confirmRoadSelectionForm = (options?: RouteQueryOptions): RouteFormDefinit
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoadSelection
-* @see app/Http/Controllers/PhotoUploadController.php:249
+* @see app/Http/Controllers/PhotoUploadController.php:268
 * @route '/api/confirm-road-selection'
 */
 confirmRoadSelectionForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -113,7 +113,7 @@ confirmRoadSelection.form = confirmRoadSelectionForm
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::update
-* @see app/Http/Controllers/PhotoUploadController.php:314
+* @see app/Http/Controllers/PhotoUploadController.php:332
 * @route '/api/reports/{report}'
 */
 export const update = (args: { report: number | { id: number } } | [report: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -128,7 +128,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::update
-* @see app/Http/Controllers/PhotoUploadController.php:314
+* @see app/Http/Controllers/PhotoUploadController.php:332
 * @route '/api/reports/{report}'
 */
 update.url = (args: { report: number | { id: number } } | [report: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -161,7 +161,7 @@ update.url = (args: { report: number | { id: number } } | [report: number | { id
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::update
-* @see app/Http/Controllers/PhotoUploadController.php:314
+* @see app/Http/Controllers/PhotoUploadController.php:332
 * @route '/api/reports/{report}'
 */
 update.put = (args: { report: number | { id: number } } | [report: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -171,7 +171,7 @@ update.put = (args: { report: number | { id: number } } | [report: number | { id
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::update
-* @see app/Http/Controllers/PhotoUploadController.php:314
+* @see app/Http/Controllers/PhotoUploadController.php:332
 * @route '/api/reports/{report}'
 */
 const updateForm = (args: { report: number | { id: number } } | [report: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -186,7 +186,7 @@ const updateForm = (args: { report: number | { id: number } } | [report: number 
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::update
-* @see app/Http/Controllers/PhotoUploadController.php:314
+* @see app/Http/Controllers/PhotoUploadController.php:332
 * @route '/api/reports/{report}'
 */
 updateForm.put = (args: { report: number | { id: number } } | [report: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

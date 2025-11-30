@@ -94,6 +94,16 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
     }, [open, resetState]);
 
     const handleFileSelect = useCallback((file: File) => {
+        console.log('File selected:', file);
+        console.log('File details:', {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified,
+            instanceof: file instanceof File,
+            instanceof_Blob: file instanceof Blob
+        });
+
         if (!file.type.startsWith('image/')) {
             setError('Please select a valid image file.');
             return;
@@ -137,9 +147,13 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
     }, [handleFileSelect]);
 
     const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('File input changed', e.target.files);
         const files = e.target.files;
         if (files && files.length > 0) {
+            console.log('File from input:', files[0]);
             handleFileSelect(files[0]);
+        } else {
+            console.warn('No files selected from input');
         }
     }, [handleFileSelect]);
 
@@ -150,11 +164,25 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         setError(null);
 
         const formData = new FormData();
-        formData.append('photo', selectedFile);
+        formData.append('photo', selectedFile, selectedFile.name);
+
+        // Debug: Log what we're sending
+        console.log('Uploading file:', {
+            name: selectedFile.name,
+            type: selectedFile.type,
+            size: selectedFile.size,
+            lastModified: selectedFile.lastModified
+        });
+
+        // Debug: Check FormData contents
+        for (let pair of formData.entries()) {
+            console.log('FormData entry:', pair[0], pair[1]);
+        }
 
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             console.log('CSRF Token:', csrfToken);
+            console.log('File to upload:', selectedFile.name, selectedFile.type, selectedFile.size);
 
             const response = await fetch('/api/upload-photo', {
                 method: 'POST',
@@ -163,12 +191,30 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
                 headers: {
                     'X-CSRF-TOKEN': csrfToken || '',
                     'Accept': 'application/json',
+                    // Note: Do NOT set Content-Type header - browser will set it automatically with boundary
                 },
             });
 
 
             if (response.status === 419) {
                 setError('Session expired. Please refresh the page and try again.');
+                setIsUploading(false);
+                return;
+            }
+
+            // Handle validation errors (422)
+            if (response.status === 422) {
+                const errorData = await response.json();
+                console.log('Validation errors:', errorData);
+
+                // Extract the first validation error message
+                if (errorData.errors && errorData.errors.photo) {
+                    setError(errorData.errors.photo[0]);
+                } else if (errorData.message) {
+                    setError(errorData.message);
+                } else {
+                    setError('Please check that you selected a valid image file (JPEG, PNG) under 10MB.');
+                }
                 setIsUploading(false);
                 return;
             }
