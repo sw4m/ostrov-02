@@ -24,7 +24,15 @@ class RoadController extends Controller
             ->where('bbox_max_lat', '>=', $validated['minLat'])
             ->where('bbox_min_lng', '<=', $validated['maxLng'])
             ->where('bbox_max_lng', '>=', $validated['minLng'])
-            ->with('reports')
+            ->with([
+                'reports' => function ($query) {
+                    $query->orderBy('created_at', 'desc');
+                },
+                'announcements' => function ($query) {
+                    $query->orderBy('created_at', 'desc')->with('user');
+                },
+            ])
+            ->withCount('reports')
             ->get();
 
         // Convert to GeoJSON format
@@ -73,11 +81,32 @@ class RoadController extends Controller
                     'osm_id' => $road->osm_id,
                     'name' => $road->name,
                     'highway_type' => $road->highway_type,
-                    'condition' => $this->mapConditionToLabel($averageCondition),
-                    'severity' => $averageCondition ? (1 - $averageCondition) : 0,
-                    'reports_count' => $road->reports->count(),
-                    'images' => $images,
-                    'reports' => $reports,
+                    'condition' => $this->mapConditionToLabel($road->condition),
+                    'severity' => $road->condition ? (1 - $road->condition) : 0,
+                    'reports_count' => $road->reports_count ?? 0,
+                    'recent_reports' => $road->reports->map(function ($report) {
+                        return [
+                            'id' => $report->id,
+                            'type' => $report->type,
+                            'status' => $report->status,
+                            'photo_url' => asset($report->photo_url),
+                            'description' => $report->description,
+                            'ai_analysis' => $report->ai_analysis,
+                            'condition' => $report->condition,
+                            'created_at' => $report->created_at ? $report->created_at->toDateTimeString() : null,
+                            'latitude' => $report->latitude,
+                            'longitude' => $report->longitude,
+                        ];
+                    })->toArray(),
+                    'recent_announcements' => $road->announcements->map(function ($ann) {
+                        return [
+                            'id' => $ann->id,
+                            'user_id' => $ann->user_id,
+                            'user_name' => $ann->user->name ?? null,
+                            'description' => $ann->description,
+                            'created_at' => $ann->created_at ? $ann->created_at->toDateTimeString() : null,
+                        ];
+                    })->toArray(),
                 ],
             ];
         });

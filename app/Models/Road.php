@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Announcement;
 
 class Road extends Model
 {
@@ -133,5 +134,8 @@ class Road extends Model
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $earthRadius * $c;
+    public function announcements(): HasMany
+    {
+        return $this->hasMany(Announcement::class);
     }
 }

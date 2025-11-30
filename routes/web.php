@@ -36,6 +36,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::put('api/reports/{report}', [PhotoUploadController::class, 'update'])
         ->name('report.update');
+
+    // Announcements CRUD (authenticated)
+    Route::apiResource('api/announcements', App\Http\Controllers\AnnouncementController::class);
 });
 
 require __DIR__.'/settings.php';
