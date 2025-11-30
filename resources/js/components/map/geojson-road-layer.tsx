@@ -8,6 +8,7 @@ interface GeoJSONRoadLayerProps {
     getFeaturesInViewport: (bounds: ViewportBounds) => RoadGeoJSON | null;
     hasData: boolean;
     highlightedRoadId?: number | null;
+    onFeatureClick?: (props: RoadFeatureProperties) => void;
 }
 
 // Color mapping for road conditions
@@ -39,7 +40,7 @@ const CONDITION_STYLES: Record<RoadCondition | 'unknown', PathOptions> = {
     },
 };
 
-export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRoadId }: GeoJSONRoadLayerProps) {
+export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRoadId, onFeatureClick }: GeoJSONRoadLayerProps) {
     const map = useMap();
     const [visibleFeatures, setVisibleFeatures] = useState<RoadGeoJSON | null>(null);
     const [key, setKey] = useState(0); // Force re-render when features change
@@ -132,7 +133,13 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRo
         if (!feature.properties) return;
 
         const props = feature.properties as RoadFeatureProperties;
-        const popupContent = `
+        // Use React dialog instead of Leaflet popup when provided
+        if (typeof (layer as any).on === 'function' && onFeatureClick) {
+            (layer as any).on('click', () => {
+                onFeatureClick(props);
+            });
+        } else {
+            const popupContent = `
             <div class="p-2">
                 <h3 class="font-semibold text-sm mb-1"> ${props.name != "Unnamed Road" ? 'Street ' + props.name : 'Unnamed Street'}</h3>
                 <div class="text-xs space-y-1">
@@ -140,7 +147,8 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRo
                 </div>
             </div>
         `;
-        layer.bindPopup(popupContent);
+            layer.bindPopup(popupContent);
+        }
     };
 
     return (

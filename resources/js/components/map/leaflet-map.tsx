@@ -1,7 +1,9 @@
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppearance } from '@/hooks/use-appearance';
 import { GeoJSONRoadLayer } from './geojson-road-layer';
+import { RoadDetailsDialog } from './road-details-dialog';
+import type { RoadFeatureProperties } from '@/types';
 import { useGeoJSONLoader } from './use-geojson-loader';
 
 interface LeafletMapProps {
@@ -69,6 +71,8 @@ function MapController({
 export function LeafletMap({ onFileLoad, center, uploadedFile, highlightedRoadId }: LeafletMapProps) {
     const { appearance } = useAppearance();
     const { getFeaturesInViewport, hasData, loadGeoJSON, loadRoadsFromDatabase } = useGeoJSONLoader();
+    const [selectedRoad, setSelectedRoad] = useState<RoadFeatureProperties | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
 
     // Handle file upload from props
     useEffect(() => {
@@ -106,8 +110,16 @@ export function LeafletMap({ onFileLoad, center, uploadedFile, highlightedRoadId
                         getFeaturesInViewport={getFeaturesInViewport}
                         hasData={hasData}
                         highlightedRoadId={highlightedRoadId}
+                        onFeatureClick={(props) => {
+                            setSelectedRoad(props);
+                            setDialogOpen(true);
+                        }}
                     />
                 )}
+                <RoadDetailsDialog open={dialogOpen} onOpenChange={(open) => {
+                    setDialogOpen(open);
+                    if (!open) setSelectedRoad(null);
+                }} road={selectedRoad} />
             </MapContainer>
         </div >
     );
