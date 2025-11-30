@@ -57,7 +57,7 @@ upload.form = uploadForm
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoad
-* @see app/Http/Controllers/PhotoUploadController.php:176
+* @see app/Http/Controllers/PhotoUploadController.php:249
 * @route '/api/confirm-road-selection'
 */
 export const confirmRoad = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -72,7 +72,7 @@ confirmRoad.definition = {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoad
-* @see app/Http/Controllers/PhotoUploadController.php:176
+* @see app/Http/Controllers/PhotoUploadController.php:249
 * @route '/api/confirm-road-selection'
 */
 confirmRoad.url = (options?: RouteQueryOptions) => {
@@ -81,7 +81,7 @@ confirmRoad.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoad
-* @see app/Http/Controllers/PhotoUploadController.php:176
+* @see app/Http/Controllers/PhotoUploadController.php:249
 * @route '/api/confirm-road-selection'
 */
 confirmRoad.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -91,7 +91,7 @@ confirmRoad.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoad
-* @see app/Http/Controllers/PhotoUploadController.php:176
+* @see app/Http/Controllers/PhotoUploadController.php:249
 * @route '/api/confirm-road-selection'
 */
 const confirmRoadForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -101,7 +101,7 @@ const confirmRoadForm = (options?: RouteQueryOptions): RouteFormDefinition<'post
 
 /**
 * @see \App\Http\Controllers\PhotoUploadController::confirmRoad
-* @see app/Http/Controllers/PhotoUploadController.php:176
+* @see app/Http/Controllers/PhotoUploadController.php:249
 * @route '/api/confirm-road-selection'
 */
 confirmRoadForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

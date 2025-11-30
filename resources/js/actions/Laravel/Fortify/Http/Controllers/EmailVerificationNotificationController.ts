@@ -57,8 +57,4 @@ store.form = storeForm
 
 const EmailVerificationNotificationController = { store }
 
-export default EmailVerificationNotificationControllerrm = storeForm
-
-const EmailVerificationNotificationController = { store }
-
 export default EmailVerificationNotificationController

@@ -12,9 +12,9 @@ use App\Models\Report;
 use App\Models\Road;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-
 class PhotoUploadController extends Controller
 {
+
     public function store(Request $request)
     {
         Log::info('Photo upload started');
@@ -29,30 +29,91 @@ class PhotoUploadController extends Controller
             $file = $request->file('photo');
             $tempPath = $file->getRealPath();
 
-            Log::info('File received', ['path' => $tempPath]);
+            Log::info('File received', [
+                'path' => $tempPath,
+                'mime' => $file->getMimeType(),
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+            ]);
 
-            // Extract EXIF data
-            $exif = @exif_read_data($tempPath);
-            Log::info('EXIF data read', ['has_gps' => isset($exif['GPSLatitude'])]);
+            // Extract EXIF data - try multiple methods
+            $exif = false;
+            $latitude = null;
+            $longitude = null;
 
-            // Check if GPS data exists, otherwise use default coordinates
-            if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
-                Log::warning('No GPS data in photo, using default coordinates');
-                // Default coordinates
+            // Check if exif extension is available
+            if (!function_exists('exif_read_data')) {
+                Log::error('EXIF extension not available on server');
+            } else {
+                // Attempt to read EXIF data
+                try {
+                    $exif = @exif_read_data($tempPath, 0, true);
+                    if ($exif !== false) {
+                        Log::info('EXIF data found', [
+                            'sections' => array_keys($exif),
+                            'has_gps' => isset($exif['GPS']),
+                            'gps_data' => isset($exif['GPS']) ? $exif['GPS'] : null,
+                        ]);
+                    } else {
+                        Log::warning('exif_read_data returned false');
+                    }
+                } catch (\Exception $e) {
+                    Log::error('EXIF reading failed', ['error' => $e->getMessage()]);
+                }
+            }
+
+            // Try to extract GPS coordinates from EXIF
+            if ($exif && isset($exif['GPS'])) {
+                $gps = $exif['GPS'];
+
+                if (isset($gps['GPSLatitude'], $gps['GPSLatitudeRef'], $gps['GPSLongitude'], $gps['GPSLongitudeRef'])) {
+                    $latitude = $this->getGps($gps['GPSLatitude'], $gps['GPSLatitudeRef']);
+                    $longitude = $this->getGps($gps['GPSLongitude'], $gps['GPSLongitudeRef']);
+
+                    Log::info('GPS coordinates extracted', [
+                        'lat' => $latitude,
+                        'lng' => $longitude,
+                        'lat_raw' => $gps['GPSLatitude'],
+                        'lng_raw' => $gps['GPSLongitude'],
+                    ]);
+                } else {
+                    Log::warning('GPS section exists but missing required fields', [
+                        'available_fields' => array_keys($gps),
+                    ]);
+                }
+            } else if ($exif && (isset($exif['GPSLatitude']) || isset($exif['GPSLongitude']))) {
+                // Some cameras might store GPS data at root level
+                if (isset($exif['GPSLatitude'], $exif['GPSLatitudeRef'], $exif['GPSLongitude'], $exif['GPSLongitudeRef'])) {
+                    $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+                    $longitude = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+
+                    Log::info('GPS coordinates extracted from root', [
+                        'lat' => $latitude,
+                        'lng' => $longitude,
+                    ]);
+                }
+            }
+
+            // If no valid GPS data, use default coordinates
+            if ($latitude === null || $longitude === null) {
+                Log::warning('No valid GPS data in photo, using default coordinates', [
+                    'exif_available' => $exif !== false,
+                    'lat_extracted' => $latitude,
+                    'lng_extracted' => $longitude,
+                ]);
+
+                // In debug mode, let user know GPS data wasn't found
+                if (config('app.debug')) {
+                    $debugMessage = 'No GPS data found in image. ';
+                    if (!function_exists('exif_read_data')) {
+                        $debugMessage .= 'EXIF extension not available. ';
+                    }
+                    $debugMessage .= 'Using default location.';
+                    Log::warning($debugMessage);
+                }
+
                 $latitude = 48.73186705397255;
                 $longitude = 21.24299601733856;
-            } else {
-                // Convert EXIF GPS to decimal coordinates
-                $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-                $longitude = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
-
-                Log::info('Coordinates extracted from EXIF', ['lat' => $latitude, 'lng' => $longitude]);
-
-                if ($latitude === null || $longitude === null) {
-                    Log::warning('Invalid GPS data in photo, using default coordinates');
-                    $latitude = 48.73186705397255;
-                    $longitude = 21.24299601733856;
-                }
             }
 
             Log::info('Final coordinates', ['lat' => $latitude, 'lng' => $longitude]);
@@ -159,9 +220,21 @@ class PhotoUploadController extends Controller
                 'report_id' => $report->id,
                 'road_id' => $road->id,
                 'ai_analysis' => $aiAnalysis,
+                'distance_to_road' => $distance,
+                'debug' => config('app.debug') ? [
+                    'gps_from_exif' => $exif !== false,
+                    'used_default_coords' => ($latitude == 48.73186705397255 && $longitude == 21.24299601733856),
+                ] : null,
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Photo upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'error' => 'An error occurred while processing your photo. Please try again.',
@@ -384,7 +457,12 @@ class PhotoUploadController extends Controller
             ->get();
 
         if ($candidates->isEmpty()) {
-            throw new \Exception('No roads found near this location');
+            Log::warning('No candidate roads found', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'search_buffer' => $searchBuffer,
+            ]);
+            throw new \Exception('No roads found near this location. Please ensure you are in an area with mapped roads, or the photo location is accurate.');
         }
 
         // Calculate actual distances
@@ -400,7 +478,13 @@ class PhotoUploadController extends Controller
         }
 
         if (empty($roadsWithDistance)) {
-            throw new \Exception('No roads found within ' . $maxDistance . 'm of this location');
+            Log::warning('No roads within acceptable distance', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'max_distance' => $maxDistance,
+                'candidates_checked' => $candidates->count(),
+            ]);
+            throw new \Exception('No roads found within ' . $maxDistance . 'm of this location. The closest road may be too far away.');
         }
 
         // Sort by distance
