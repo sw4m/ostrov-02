@@ -11,6 +11,8 @@ import {
 import { Label } from '@/components/ui/label';
 import type { RoadFeatureProperties, Report } from '@/types';
 import { useState } from 'react';
+import { usePage } from '@inertiajs/react';
+import AnnouncementDialog from './announcement-dialog';
 
 interface RoadDetailsDialogProps {
     open: boolean;
@@ -28,7 +30,8 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
     const { auth } = page.props
 
     const isAdminUser = React.useMemo(() => {
-        return auth.user.isAdmin()
+        const result = auth?.user?.is_admin === true
+        return result
     }, [auth])
 
     React.useEffect(() => {

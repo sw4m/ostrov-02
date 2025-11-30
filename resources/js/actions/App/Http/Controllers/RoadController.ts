@@ -72,7 +72,7 @@ indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: index.url({
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
-            ...options?.query ?? options?.mergeQuery,
+            ...(options?.query ?? options?.mergeQuery ?? {}),
         }
     }),
     method: 'get',
