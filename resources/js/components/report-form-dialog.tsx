@@ -24,12 +24,13 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 interface ReportFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSuccess: (latitude: number, longitude: number) => void;
+    onSuccess: (latitude: number, longitude: number, roadId?: number) => void;
     reportData: {
         report_id: number;
         latitude: number;
         longitude: number;
         photo_url: string;
+        road_id?: number;
         ai_analysis: {
             type?: string;
             description?: string;
@@ -91,7 +92,7 @@ export function ReportFormDialog({
             if (data.success) {
                 setSuccess(true);
                 setTimeout(() => {
-                    onSuccess(reportData.latitude, reportData.longitude);
+                    onSuccess(reportData.latitude, reportData.longitude, reportData.road_id);
                     onOpenChange(false);
                 }, 1500);
             } else {

@@ -7,40 +7,59 @@ import type { RoadCondition, RoadFeatureProperties, RoadGeoJSON, ViewportBounds 
 interface GeoJSONRoadLayerProps {
     getFeaturesInViewport: (bounds: ViewportBounds) => RoadGeoJSON | null;
     hasData: boolean;
+    highlightedRoadId?: number | null;
 }
 
 // Color mapping for road conditions
-const CONDITION_STYLES: Record<RoadCondition, PathOptions> = {
+const CONDITION_STYLES: Record<RoadCondition | 'unknown', PathOptions> = {
     excellent: {
-        color: '#ef4444', // red-500
+        color: '#22c55e', // green-500 - excellent condition
         weight: 5,
         opacity: 0.9,
     },
     good: {
-        color: '#ef4444', // red-500
+        color: '#84cc16', // lime-500 - good condition
         weight: 5,
         opacity: 0.9,
     },
     poor: {
-        color: '#ef4444', // red-500
+        color: '#f97316', // orange-500 - poor condition
         weight: 5,
         opacity: 0.9,
     },
     critical: {
-        color: '#ef4444', // red-500
+        color: '#ef4444', // red-500 - critical condition
         weight: 5,
         opacity: 0.9,
     },
+    unknown: {
+        color: '#9ca3af', // gray-400 - no data
+        weight: 4,
+        opacity: 0.6,
+    },
 };
 
-export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData }: GeoJSONRoadLayerProps) {
+export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData, highlightedRoadId }: GeoJSONRoadLayerProps) {
     const map = useMap();
     const [visibleFeatures, setVisibleFeatures] = useState<RoadGeoJSON | null>(null);
     const [key, setKey] = useState(0); // Force re-render when features change
+    const [currentZoom, setCurrentZoom] = useState(map.getZoom());
+
+    // Minimum zoom level to show roads (adjust this value as needed)
+    const MIN_ZOOM_FOR_ROADS = 14;
 
     useEffect(() => {
         // Update visible features based on viewport
         const updateVisibleFeatures = () => {
+            const zoom = map.getZoom();
+            setCurrentZoom(zoom);
+
+            // Don't show roads if zoom level is too low
+            if (zoom < MIN_ZOOM_FOR_ROADS) {
+                setVisibleFeatures(null);
+                return;
+            }
+
             if (!hasData) {
                 setVisibleFeatures(null);
                 return;
@@ -72,6 +91,11 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData }: GeoJSONRoad
         };
     }, [map, hasData, getFeaturesInViewport]);
 
+    // Don't render if zoom is too low
+    if (currentZoom < MIN_ZOOM_FOR_ROADS) {
+        return null;
+    }
+
     if (!visibleFeatures || !visibleFeatures.features.length) {
         return null;
     }
@@ -79,12 +103,28 @@ export function GeoJSONRoadLayer({ getFeaturesInViewport, hasData }: GeoJSONRoad
     // Style function based on road condition
     const styleFeature = (feature: GeoJSON.Feature | undefined): PathOptions => {
         if (!feature || !feature.properties) {
-            return CONDITION_STYLES.good;
+            return CONDITION_STYLES.unknown;
         }
 
         const props = feature.properties as RoadFeatureProperties;
-        const condition = props.condition || 'good';
-        return CONDITION_STYLES[condition];
+
+        // Highlight the road that was just reported in blue
+        if (highlightedRoadId && props.id === highlightedRoadId) {
+            return {
+                color: '#3b82f6', // blue-500
+                weight: 6,
+                opacity: 1,
+            };
+        }
+
+        const condition = props.condition;
+        
+        // If no condition data, show as gray
+        if (!condition || condition === 'unknown') {
+            return CONDITION_STYLES.unknown;
+        }
+
+        return CONDITION_STYLES[condition] || CONDITION_STYLES.unknown;
     };
 
     // Popup content for each feature

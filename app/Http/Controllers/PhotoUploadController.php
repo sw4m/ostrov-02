@@ -35,26 +35,27 @@ class PhotoUploadController extends Controller
             $exif = @exif_read_data($tempPath);
             Log::info('EXIF data read', ['has_gps' => isset($exif['GPSLatitude'])]);
 
+            // Check if GPS data exists, otherwise use default coordinates
             if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
-                Log::warning('No GPS data in photo');
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Location data not found in photo. Please enable location services in your camera settings and take a new photo.',
-                ], 422);
+                Log::warning('No GPS data in photo, using default coordinates');
+                // Default coordinates: Košice, Slovakia
+                $latitude = 48.732282;
+                $longitude = 21.242572;
+            } else {
+                // Convert EXIF GPS to decimal coordinates
+                $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+                $longitude = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+
+                Log::info('Coordinates extracted from EXIF', ['lat' => $latitude, 'lng' => $longitude]);
+
+                if ($latitude === null || $longitude === null) {
+                    Log::warning('Invalid GPS data in photo, using default coordinates');
+                    $latitude = 48.732282;
+                    $longitude = 21.242572;
+                }
             }
 
-            // Convert EXIF GPS to decimal coordinates
-            $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-            $longitude = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
-
-            Log::info('Coordinates extracted', ['lat' => $latitude, 'lng' => $longitude]);
-
-            if ($latitude === null || $longitude === null) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Unable to read location data from photo. Please try another image with valid GPS information.',
-                ], 422);
-            }
+            Log::info('Final coordinates', ['lat' => $latitude, 'lng' => $longitude]);
 
             // Generate unique filename
             $filename = Str::uuid() . '.webp';
@@ -117,6 +118,7 @@ class PhotoUploadController extends Controller
                 'photo_url' => $photoUrl,
                 'filename' => $filename,
                 'report_id' => $report->id,
+                'road_id' => $road->id,
                 'ai_analysis' => $aiAnalysis,
             ]);
 
@@ -198,13 +200,24 @@ class PhotoUploadController extends Controller
                         'content' => [
                             [
                                 'type' => 'text',
-                                'text' => 'Analyze this road image and provide a JSON response with the following fields:\n'
-                                    . '- type: "crack", "pothole", or "damage"\n'
-                                    . '- description: Brief description of the road condition\n'
-                                    . '- condition: A score from 0.00 to 1.00 (1.00 being perfect condition)\n'
-                                    . '- severity: "low", "medium", or "high"\n'
-                                    . '- detected_issues: Array of specific issues found\n'
-                                    . 'Only respond with valid JSON, no additional text.',
+                                'text' => 'Analyze this image to determine if it shows a ROAD SURFACE photographed from ABOVE (top-down or angled downward view). ALWAYS respond with valid JSON only, no markdown, no code blocks, no explanatory text.\n\n'
+                                    . 'CRITICAL CRITERIA for road_probability:\n'
+                                    . '- You must be able to see the actual road surface texture, cracks, or pavement details\n'
+                                    . 'Required JSON format:\n'
+                                    . '{\n'
+                                    . '  "type": "crack" | "pothole" | "damage",\n'
+                                    . '  "description": "Brief description",\n'
+                                    . '  "condition": 0.00 to 1.00 (1.00 = perfect, 0.00 = severe damage),\n'
+                                    . '  "severity": "low" | "medium" | "high",\n'
+                                    . '  "detected_issues": ["array of specific issues"],\n'
+                                    . '  "road_probability": 0.00 to 1.00 (probability this is a usable road surface photo taken from above)\n'
+                                    . '}\n\n'
+                                    . 'Set road_probability to 0.00 if:\n'
+                                    . '- No road surface visible\n'
+                                    . '- Photo is from side view, distant view, or landscape perspective\n'
+                                    . '- Photo shows bridges, buildings, cars, or other objects instead of road surface\n'
+                                    . '- Surface details (cracks, texture, potholes) are not clearly visible\n\n'
+                                    . 'CRITICAL: Return ONLY the JSON object, nothing else.',
                             ],
                             [
                                 'type' => 'image_url',
@@ -216,9 +229,13 @@ class PhotoUploadController extends Controller
                     ],
                 ],
                 'max_tokens' => 500,
+                'response_format' => ['type' => 'json_object'],
             ]);
 
             $content = $response->choices[0]->message->content;
+
+            // Log only the raw JSON response
+            Log::info('Raw OpenAI JSON Response: ' . $content);
 
             // Parse JSON response
             $analysis = json_decode($content, true);

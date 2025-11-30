@@ -11,8 +11,9 @@ import { SearchResultItem } from 'nominatim-client';
 export default function Dashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
-    const [mapCenter, setMapCenter] = useState<{ lat: number; lon: number } | null>(null);
+    const [mapCenter, setMapCenter] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [highlightedRoadId, setHighlightedRoadId] = useState<number | null>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const searchCity = async (query: string): Promise<SearchResultItem[] | undefined> => {
@@ -79,8 +80,11 @@ export default function Dashboard() {
         setSearchResults([]);
     };
 
-    const handleUploadSuccess = (latitude: number, longitude: number) => {
-        setMapCenter({ lat: latitude, lon: longitude });
+    const handleUploadSuccess = (latitude: number, longitude: number, roadId?: number) => {
+        setMapCenter({ lat: latitude, lon: longitude, zoom: 16 });
+        if (roadId) {
+            setHighlightedRoadId(roadId);
+        }
     };
 
     return (
@@ -139,6 +143,7 @@ export default function Dashboard() {
                     onFileLoad={() => {}}
                     center={mapCenter}
                     uploadedFile={null}
+                    highlightedRoadId={highlightedRoadId}
                 />
             </div>
 

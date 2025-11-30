@@ -56,10 +56,10 @@ class RoadController extends Controller
     /**
      * Map numeric condition to label
      */
-    private function mapConditionToLabel(?float $condition): string
+    private function mapConditionToLabel(?float $condition): ?string
     {
         if ($condition === null) {
-            return 'good';
+            return null; // Return null for roads with no condition data
         }
 
         if ($condition >= 0.9) {

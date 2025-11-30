@@ -16,7 +16,7 @@ import { ReportFormDialog } from './report-form-dialog';
 interface UploadDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSuccess: (latitude: number, longitude: number) => void;
+    onSuccess: (latitude: number, longitude: number, roadId?: number) => void;
 }
 
 interface ReportData {
@@ -24,12 +24,14 @@ interface ReportData {
     latitude: number;
     longitude: number;
     photo_url: string;
+    road_id?: number;
     ai_analysis: {
         type?: string;
         description?: string;
         condition?: number;
         severity?: string;
         detected_issues?: string[];
+        road_probability?: number;
     };
 }
 
@@ -130,7 +132,6 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
                 },
             });
 
-            console.log('Response status:', response.status);
 
             if (response.status === 419) {
                 setError('Session expired. Please refresh the page and try again.');
@@ -142,6 +143,15 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
             console.log('Response data:', data);
 
             if (data.success) {
+                // Check road probability
+                const roadProbability = data.ai_analysis?.road_probability ?? 1.0;
+
+                if (roadProbability < 0.7) {
+                    setError('No road detected in the image. Please take a photo of a road surface.');
+                    setIsUploading(false);
+                    return;
+                }
+
                 setSuccess(true);
                 setError(null);
                 setReportData(data);
@@ -160,7 +170,7 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         } finally {
             setIsUploading(false);
         }
-    }, [selectedFile, onSuccess, onOpenChange, resetState]);
+    }, [selectedFile, onOpenChange]);
 
     const handleClose = useCallback(() => {
         if (!isUploading) {
@@ -169,9 +179,9 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
         }
     }, [isUploading, onOpenChange, resetState]);
 
-    const handleReportFormSuccess = useCallback((latitude: number, longitude: number) => {
+    const handleReportFormSuccess = useCallback((latitude: number, longitude: number, roadId?: number) => {
         resetState();
-        onSuccess(latitude, longitude);
+        onSuccess(latitude, longitude, roadId);
     }, [resetState, onSuccess]);
 
     return (
@@ -264,7 +274,7 @@ export function UploadDialog({ open, onOpenChange, onSuccess }: UploadDialogProp
                         <Alert className="border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
                             <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                             <AlertDescription className="text-sm text-green-800 dark:text-green-200">
-                                Photo uploaded! Map centering on location...
+                                Photo uploaded!
                             </AlertDescription>
                         </Alert>
                     )}

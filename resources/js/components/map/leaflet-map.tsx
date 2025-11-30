@@ -6,8 +6,9 @@ import { useGeoJSONLoader } from './use-geojson-loader';
 
 interface LeafletMapProps {
     onFileLoad?: (file: File) => void;
-    center?: { lat: number; lon: number } | null;
+    center?: { lat: number; lon: number; zoom?: number } | null;
     uploadedFile?: File | null;
+    highlightedRoadId?: number | null;
 }
 
 // Component to handle map navigation and database loading
@@ -15,14 +16,15 @@ function MapController({
     center,
     loadRoadsFromDatabase
 }: {
-    center?: { lat: number; lon: number } | null;
+    center?: { lat: number; lon: number; zoom?: number } | null;
     loadRoadsFromDatabase: (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => void;
 }) {
     const map = useMap();
 
     useEffect(() => {
         if (center) {
-            map.setView([center.lat, center.lon], 13);
+            const zoom = center.zoom ?? 13;
+            map.setView([center.lat, center.lon], zoom);
         }
     }, [center, map]);
 
@@ -64,7 +66,7 @@ function MapController({
     return null;
 }
 
-export function LeafletMap({ onFileLoad, center, uploadedFile }: LeafletMapProps) {
+export function LeafletMap({ onFileLoad, center, uploadedFile, highlightedRoadId }: LeafletMapProps) {
     const { appearance } = useAppearance();
     const { getFeaturesInViewport, hasData, loadGeoJSON, loadRoadsFromDatabase } = useGeoJSONLoader();
 
@@ -103,6 +105,7 @@ export function LeafletMap({ onFileLoad, center, uploadedFile }: LeafletMapProps
                     <GeoJSONRoadLayer
                         getFeaturesInViewport={getFeaturesInViewport}
                         hasData={hasData}
+                        highlightedRoadId={highlightedRoadId}
                     />
                 )}
             </MapContainer>
