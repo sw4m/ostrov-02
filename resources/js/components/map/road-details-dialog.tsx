@@ -13,6 +13,7 @@ import type { RoadFeatureProperties, Report } from '@/types';
 import { useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import AnnouncementDialog from './announcement-dialog';
+import { json } from 'stream/consumers';
 
 interface RoadDetailsDialogProps {
     open: boolean;
@@ -30,8 +31,7 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
     const { auth } = page.props
 
     const isAdminUser = React.useMemo(() => {
-        const result = auth?.user?.is_admin === true
-        return result
+        return auth?.user?.is_admin
     }, [auth])
 
     React.useEffect(() => {
@@ -81,6 +81,8 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
 {(road as any)?.reports_count + " reports"}</div></DialogDescription>
                 </DialogHeader>
 
+                <hr />
+
                 <div className="space-y-4 py-2">
                     {!road && <div className="text-sm text-muted-foreground">No road selected.</div>}
 
@@ -108,7 +110,7 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
                                             }
                                         }}
                                     >
-                                        <div className="flex gap-2 flex-nowrap">
+                                        <div className="flex flex-col gap-2 flex-nowrap">
                                             {localAnnouncements.map((ann, index) => (
                                                 <div
                                                     key={index}
@@ -176,9 +178,6 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
 
                 <DialogFooter>
                     <div className="flex flex-col md:flex-row-reverse gap-2 w-full">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>
-                            Close
-                        </Button>
                         {road && isAdminUser && (
                             <Button className="bg-primary text-white hover:bg-primary-dark" onClick={() => setAnnouncementOpen(true)}>
                                 Add Announcement
