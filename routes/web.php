@@ -8,7 +8,7 @@ use App\Http\Controllers\PhotoUploadController;
 use App\Http\Controllers\RoadController;
 
 Route::get('/', function () {
-    return Inertia::render('welcome', [
+    return Inertia::render('dashboard', [
         'canRegister' => Features::enabled(Features::registration()),
     ]);
 })->name('home');

@@ -23,7 +23,7 @@ export function RoadDetailsDialog({ open, onOpenChange, road }: RoadDetailsDialo
         }}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{road?.name ?? 'Unnamed Road'}</DialogTitle>
+                    <DialogTitle>{road?.name == "Unnamed Road" ? 'Unnamed Street' : 'Street ' + road?.name}</DialogTitle>
                     <DialogDescription>{road?.reports_count ?? 'No reports'}</DialogDescription>
                 </DialogHeader>
 
